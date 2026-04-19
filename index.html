@@ -10,7 +10,7 @@
     .site { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
     .site-header { border-bottom: 0.5px solid #e0e0e0; padding-bottom: 2rem; margin-bottom: 2rem; }
     .site-title { font-size: 18px; font-weight: 500; letter-spacing: 0.04em; }
-    .site-desc { font-size: 13px; margin-top: 1rem; line-height: 2.1; color: #1a1a1a; }
+    .site-desc { font-size: 13px; margin-top: 1rem; line-height: 2.1; }
     .site-desc .profile { margin-top: 0.75rem; font-size: 12px; color: #888; }
     .nav-row { display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; gap: 1rem; flex-wrap: wrap; }
     .nav { display: flex; gap: 1.5rem; flex-wrap: wrap; }
@@ -41,9 +41,9 @@
     .detail-date { font-size: 12px; color: #bbb; margin-top: 8px; }
     .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
     .yt-wrap iframe { width: 100%; height: 100%; border: none; }
-    .dl-section-label { font-size: 11px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 6px; margin-bottom: 1rem; }
-    .body-text { font-size: 14px; line-height: 1.9; margin-bottom: 2rem; }
-    .tools-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; }
+    .dl-section-label { font-size: 11px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 6px; margin-bottom: 1rem; margin-top: 1.5rem; }
+    .body-text { font-size: 14px; line-height: 1.9; }
+    .tools-list { display: flex; flex-direction: column; gap: 10px; }
     .tool-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; font-size: 13px; }
     .tool-name { flex: 1; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
@@ -61,10 +61,10 @@
     </div>
     <div class="nav-row">
       <nav class="nav">
-        <a class="active" onclick="filterCat('all', this)">すべて</a>
-        <a onclick="filterCat('1週間献立', this)">1週間献立</a>
-        <a onclick="filterCat('せいろごはん', this)">せいろごはん</a>
-        <a onclick="filterCat('暮らし', this)">暮らし</a>
+        <a class="active" onclick="filterCat('all',this)">すべて</a>
+        <a onclick="filterCat('1週間献立',this)">1週間献立</a>
+        <a onclick="filterCat('せいろごはん',this)">せいろごはん</a>
+        <a onclick="filterCat('暮らし',this)">暮らし</a>
       </nav>
       <div class="search-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#1a1a1a" stroke-width="1.5">
@@ -77,70 +77,39 @@
 
   <div id="list-view">
     <div id="featured-sections">
-      <div class="section-heading">
-        <span class="ja">新着記事</span><span class="en">– New post –</span>
-      </div>
-      <div class="scroll-row" id="new-grid"></div>
+      <div class="section-heading"><span class="ja">新着記事</span><span class="en">– New post –</span></div>
+      <div class="scroll-row"><div class="card" data-id="347c5d1ae842809abffbd45e267c20cc"><div class="card-img"><div class="no-img">サムネイルなし</div></div><div class="card-cat">1週間献立</div><div class="card-title">テスト記事</div><div class="card-date">2026.04.19</div></div></div>
       <hr class="section-divider">
-      <div class="section-heading">
-        <span class="ja">ピックアップ</span><span class="en">– Pick up –</span>
-      </div>
-      <div class="scroll-row" id="pickup-grid"></div>
+      <div class="section-heading"><span class="ja">ピックアップ</span><span class="en">– Pick up –</span></div>
+      <div class="scroll-row"></div>
       <hr class="section-divider">
-      <div class="section-heading">
-        <span class="ja">すべての記事</span><span class="en">– All posts –</span>
-      </div>
+      <div class="section-heading"><span class="ja">すべての記事</span><span class="en">– All posts –</span></div>
     </div>
-    <div class="grid" id="card-grid"></div>
+    <div class="grid" id="card-grid"><div class="card" data-id="347c5d1ae842809abffbd45e267c20cc"><div class="card-img"><div class="no-img">サムネイルなし</div></div><div class="card-cat">1週間献立</div><div class="card-title">テスト記事</div><div class="card-date">2026.04.19</div></div></div>
     <div class="no-results" id="no-results" style="display:none">該当する記事が見つかりませんでした。</div>
   </div>
 
   <div class="detail" id="detail-view">
     <span class="back-btn" onclick="closeDetail()">← 一覧に戻る</span>
-    <div id="detail-content"></div>
+    <div id="detail-content"><div class="detail-inner" data-id="347c5d1ae842809abffbd45e267c20cc" style="display:none">
+      <div class="detail-cat">1週間献立</div>
+      <div class="detail-title">テスト記事</div>
+      <div class="detail-date">2026.04.19</div>
+      
+      
+      
+      
+    </div></div>
   </div>
 </div>
 
 <script>
-const posts = [{"id":"347c5d1ae842809abffbd45e267c20cc","title":"テスト記事","cat":"1週間献立","date":"2026.04.19","youtubeUrl":"","point":"","tools":"","memo":"","pickup":false}];
+const cards = document.querySelectorAll('.card');
 let currentCat = 'all', currentQuery = '';
 
-function getYoutubeId(url) {
-  if (!url) return null;
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
-  return m ? m[1] : null;
-}
-
-function cardHTML(p) {
-  const ytId = getYoutubeId(p.youtubeUrl);
-  const imgHtml = ytId
-    ? '<img src="https://img.youtube.com/vi/' + ytId + '/mqdefault.jpg" alt="' + p.title + '">'
-    : '<div class="no-img">サムネイルなし</div>';
-  return '<div class="card" onclick="openDetail(\'' + p.id + '\')">'
-    + '<div class="card-img">' + imgHtml + '</div>'
-    + '<div class="card-cat">' + p.cat + '</div>'
-    + '<div class="card-title">' + p.title + '</div>'
-    + '<div class="card-date">' + p.date + '</div>'
-    + '</div>';
-}
-
-function renderFeatured() {
-  document.getElementById('new-grid').innerHTML = posts.slice(0,3).map(cardHTML).join('');
-  document.getElementById('pickup-grid').innerHTML = posts.filter(p=>p.pickup).map(cardHTML).join('');
-}
-
-function renderGrid() {
-  const filtered = posts.filter(p =>
-    (currentCat === 'all' || p.cat === currentCat) &&
-    (!currentQuery || p.title.includes(currentQuery))
-  );
-  const isFiltering = currentCat !== 'all' || currentQuery !== '';
-  document.getElementById('featured-sections').style.display = isFiltering ? 'none' : '';
-  const grid = document.getElementById('card-grid');
-  const noRes = document.getElementById('no-results');
-  if (filtered.length === 0) { grid.innerHTML = ''; noRes.style.display = ''; }
-  else { noRes.style.display = 'none'; grid.innerHTML = filtered.map(cardHTML).join(''); }
-}
+cards.forEach(card => {
+  card.addEventListener('click', () => openDetail(card.dataset.id));
+});
 
 function filterCat(cat, el) {
   currentCat = cat;
@@ -154,31 +123,32 @@ function onSearch() {
   renderGrid();
 }
 
+function renderGrid() {
+  const isFiltering = currentCat !== 'all' || currentQuery !== '';
+  document.getElementById('featured-sections').style.display = isFiltering ? 'none' : '';
+  let found = 0;
+  cards.forEach(card => {
+    const cat = card.querySelector('.card-cat').textContent;
+    const title = card.querySelector('.card-title').textContent;
+    const show = (currentCat === 'all' || cat === currentCat) && (!currentQuery || title.includes(currentQuery));
+    card.style.display = show ? '' : 'none';
+    if (show) found++;
+  });
+  document.getElementById('no-results').style.display = found === 0 ? '' : 'none';
+}
+
 function openDetail(id) {
-  const p = posts.find(x => x.id === id);
   document.getElementById('list-view').style.display = 'none';
   document.getElementById('detail-view').classList.add('open');
-  const ytId = getYoutubeId(p.youtubeUrl);
-  const ytHtml = ytId ? '<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/' + ytId + '" allowfullscreen></iframe></div>' : '';
-  const toolLines = p.tools ? p.tools.split('\n').filter(Boolean) : [];
-  const toolsHtml = toolLines.map(t => '<div class="tool-item"><span class="tool-name">' + t + '</span></div>').join('');
-  document.getElementById('detail-content').innerHTML =
-    '<div class="detail-cat">' + p.cat + '</div>'
-    + '<div class="detail-title">' + p.title + '</div>'
-    + '<div class="detail-date">' + p.date + '</div>'
-    + ytHtml
-    + (p.point ? '<div class="dl-section-label">動画について</div><div class="body-text">' + p.point.replace(/\n/g,'<br>') + '</div>' : '')
-    + (toolsHtml ? '<div class="dl-section-label">使った道具</div><div class="tools-list">' + toolsHtml + '</div>' : '')
-    + (p.memo ? '<div class="dl-section-label">ひとこと</div><div class="memo">' + p.memo.replace(/\n/g,'<br>') + '</div>' : '');
+  document.querySelectorAll('.detail-inner').forEach(el => {
+    el.style.display = el.dataset.id === id ? '' : 'none';
+  });
 }
 
 function closeDetail() {
   document.getElementById('list-view').style.display = '';
   document.getElementById('detail-view').classList.remove('open');
 }
-
-renderFeatured();
-renderGrid();
 </script>
 </body>
 </html>
