@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -19,7 +18,6 @@
     .nav a.active { color: #1a1a1a; border-bottom: 1px solid #1a1a1a; padding-bottom: 2px; }
     .search-wrap { position: relative; }
     .search-wrap input { font-size: 13px; padding: 6px 12px 6px 30px; border: 0.5px solid #ccc; border-radius: 20px; background: #f7f7f7; color: #1a1a1a; width: 180px; outline: none; }
-    .search-wrap input:focus { border-color: #999; }
     .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.35; pointer-events: none; }
     .section-heading { margin-bottom: 1.25rem; }
     .section-heading .ja { font-size: 14px; font-weight: 500; }
@@ -35,8 +33,6 @@
     .card-title { font-size: 14px; font-weight: 500; margin-top: 4px; line-height: 1.5; }
     .card-date { font-size: 11px; color: #bbb; margin-top: 5px; }
     .no-results { font-size: 14px; color: #999; padding: 2rem 0; }
-    .loading { font-size: 13px; color: #999; padding: 2rem 0; }
-    .error-msg { font-size: 13px; color: #c00; padding: 2rem 0; }
     .detail { display: none; }
     .detail.open { display: block; }
     .back-btn { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 6px; }
@@ -50,7 +46,6 @@
     .tools-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; }
     .tool-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; font-size: 13px; }
     .tool-name { flex: 1; }
-    .tool-link { font-size: 12px; color: #888; text-decoration: underline; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
   </style>
 </head>
@@ -81,9 +76,7 @@
   </div>
 
   <div id="list-view">
-    <div id="loading-msg" class="loading">読み込み中...</div>
-    <div id="error-msg" class="error-msg" style="display:none"></div>
-    <div id="featured-sections" style="display:none">
+    <div id="featured-sections">
       <div class="section-heading">
         <span class="ja">新着記事</span><span class="en">– New post –</span>
       </div>
@@ -109,131 +102,83 @@
 </div>
 
 <script>
-  // ============================================================
-  // 設定：ここにNotionのAPIトークンとデータベースIDを入れてください
-  // ============================================================
-  const NOTION_TOKEN = 'ここにAPIトークンを入力';
-  const DATABASE_ID = '840343e3f2cd498389bcc369bd5a791b';
-  const NOTION_PROXY = 'https://notion-proxy-mame5.vercel.app/api/notion';
-  // ============================================================
+const posts = [{"id":"347c5d1ae842809abffbd45e267c20cc","title":"テスト記事","cat":"1週間献立","date":"2026.04.19","youtubeUrl":"","point":"","tools":"","memo":"","pickup":false}];
+let currentCat = 'all', currentQuery = '';
 
-  let allPosts = [];
-  let currentCat = 'all';
-  let currentQuery = '';
+function getYoutubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
+  return m ? m[1] : null;
+}
 
-  async function fetchPosts() {
-    try {
-      const res = await fetch(`${NOTION_PROXY}/databases/${DATABASE_ID}/query`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filter: { property: '公開', checkbox: { equals: true } },
-          sorts: [{ property: '公開日', direction: 'descending' }]
-        })
-      });
-      const data = await res.json();
-      allPosts = data.results.map(page => {
-        const p = page.properties;
-        return {
-          id: page.id,
-          title: p['タイトル']?.title?.[0]?.plain_text || '',
-          cat: p['カテゴリー']?.select?.name || '',
-          date: p['公開日']?.date?.start?.replace(/-/g, '.') || '',
-          youtubeUrl: p['YouTube URL']?.url || '',
-          point: p['動画について']?.rich_text?.[0]?.plain_text || '',
-          tools: p['使った道具']?.rich_text?.[0]?.plain_text || '',
-          memo: p['ひとこと']?.rich_text?.[0]?.plain_text || '',
-          pickup: p['ピックアップ']?.checkbox || false,
-        };
-      });
-      document.getElementById('loading-msg').style.display = 'none';
-      document.getElementById('featured-sections').style.display = '';
-      renderFeatured();
-      renderGrid();
-    } catch (e) {
-      document.getElementById('loading-msg').style.display = 'none';
-      const err = document.getElementById('error-msg');
-      err.style.display = '';
-      err.textContent = '記事の読み込みに失敗しました。';
-    }
-  }
+function cardHTML(p) {
+  const ytId = getYoutubeId(p.youtubeUrl);
+  const imgHtml = ytId
+    ? '<img src="https://img.youtube.com/vi/' + ytId + '/mqdefault.jpg" alt="' + p.title + '">'
+    : '<div class="no-img">サムネイルなし</div>';
+  return '<div class="card" onclick="openDetail(\'' + p.id + '\')">'
+    + '<div class="card-img">' + imgHtml + '</div>'
+    + '<div class="card-cat">' + p.cat + '</div>'
+    + '<div class="card-title">' + p.title + '</div>'
+    + '<div class="card-date">' + p.date + '</div>'
+    + '</div>';
+}
 
-  function getYoutubeId(url) {
-    if (!url) return null;
-    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
-    return m ? m[1] : null;
-  }
+function renderFeatured() {
+  document.getElementById('new-grid').innerHTML = posts.slice(0,3).map(cardHTML).join('');
+  document.getElementById('pickup-grid').innerHTML = posts.filter(p=>p.pickup).map(cardHTML).join('');
+}
 
-  function cardHTML(p) {
-    const ytId = getYoutubeId(p.youtubeUrl);
-    const imgHtml = ytId
-      ? `<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${p.title}">`
-      : `<div class="no-img">サムネイルなし</div>`;
-    return `<div class="card" onclick="openDetail('${p.id}')">
-      <div class="card-img">${imgHtml}</div>
-      <div class="card-cat">${p.cat}</div>
-      <div class="card-title">${p.title}</div>
-      <div class="card-date">${p.date}</div>
-    </div>`;
-  }
+function renderGrid() {
+  const filtered = posts.filter(p =>
+    (currentCat === 'all' || p.cat === currentCat) &&
+    (!currentQuery || p.title.includes(currentQuery))
+  );
+  const isFiltering = currentCat !== 'all' || currentQuery !== '';
+  document.getElementById('featured-sections').style.display = isFiltering ? 'none' : '';
+  const grid = document.getElementById('card-grid');
+  const noRes = document.getElementById('no-results');
+  if (filtered.length === 0) { grid.innerHTML = ''; noRes.style.display = ''; }
+  else { noRes.style.display = 'none'; grid.innerHTML = filtered.map(cardHTML).join(''); }
+}
 
-  function renderFeatured() {
-    document.getElementById('new-grid').innerHTML = allPosts.slice(0, 3).map(cardHTML).join('');
-    document.getElementById('pickup-grid').innerHTML = allPosts.filter(p => p.pickup).map(cardHTML).join('');
-  }
+function filterCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
 
-  function renderGrid() {
-    const filtered = allPosts.filter(p =>
-      (currentCat === 'all' || p.cat === currentCat) &&
-      (!currentQuery || p.title.includes(currentQuery))
-    );
-    const isFiltering = currentCat !== 'all' || currentQuery !== '';
-    document.getElementById('featured-sections').style.display = isFiltering ? 'none' : '';
-    const grid = document.getElementById('card-grid');
-    const noRes = document.getElementById('no-results');
-    if (filtered.length === 0) { grid.innerHTML = ''; noRes.style.display = ''; }
-    else { noRes.style.display = 'none'; grid.innerHTML = filtered.map(cardHTML).join(''); }
-  }
+function onSearch() {
+  currentQuery = document.getElementById('search-input').value.trim();
+  renderGrid();
+}
 
-  function filterCat(cat, el) {
-    currentCat = cat;
-    document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
-    el.classList.add('active');
-    renderGrid();
-  }
+function openDetail(id) {
+  const p = posts.find(x => x.id === id);
+  document.getElementById('list-view').style.display = 'none';
+  document.getElementById('detail-view').classList.add('open');
+  const ytId = getYoutubeId(p.youtubeUrl);
+  const ytHtml = ytId ? '<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/' + ytId + '" allowfullscreen></iframe></div>' : '';
+  const toolLines = p.tools ? p.tools.split('\n').filter(Boolean) : [];
+  const toolsHtml = toolLines.map(t => '<div class="tool-item"><span class="tool-name">' + t + '</span></div>').join('');
+  document.getElementById('detail-content').innerHTML =
+    '<div class="detail-cat">' + p.cat + '</div>'
+    + '<div class="detail-title">' + p.title + '</div>'
+    + '<div class="detail-date">' + p.date + '</div>'
+    + ytHtml
+    + (p.point ? '<div class="dl-section-label">動画について</div><div class="body-text">' + p.point.replace(/\n/g,'<br>') + '</div>' : '')
+    + (toolsHtml ? '<div class="dl-section-label">使った道具</div><div class="tools-list">' + toolsHtml + '</div>' : '')
+    + (p.memo ? '<div class="dl-section-label">ひとこと</div><div class="memo">' + p.memo.replace(/\n/g,'<br>') + '</div>' : '');
+}
 
-  function onSearch() {
-    currentQuery = document.getElementById('search-input').value.trim();
-    renderGrid();
-  }
+function closeDetail() {
+  document.getElementById('list-view').style.display = '';
+  document.getElementById('detail-view').classList.remove('open');
+}
 
-  function openDetail(id) {
-    const p = allPosts.find(x => x.id === id);
-    document.getElementById('list-view').style.display = 'none';
-    document.getElementById('detail-view').classList.add('open');
-    const ytId = getYoutubeId(p.youtubeUrl);
-    const ytHtml = ytId
-      ? `<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>`
-      : '';
-    const toolLines = p.tools ? p.tools.split('\n').filter(Boolean) : [];
-    const toolsHtml = toolLines.map(t => `<div class="tool-item"><span class="tool-name">${t}</span></div>`).join('');
-    document.getElementById('detail-content').innerHTML = `
-      <div class="detail-cat">${p.cat}</div>
-      <div class="detail-title">${p.title}</div>
-      <div class="detail-date">${p.date}</div>
-      ${ytHtml}
-      ${p.point ? `<div class="dl-section-label">動画について</div><div class="body-text">${p.point.replace(/\n/g,'<br>')}</div>` : ''}
-      ${toolsHtml ? `<div class="dl-section-label">使った道具</div><div class="tools-list">${toolsHtml}</div>` : ''}
-      ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${p.memo.replace(/\n/g,'<br>')}</div>` : ''}
-    `;
-  }
-
-  function closeDetail() {
-    document.getElementById('list-view').style.display = '';
-    document.getElementById('detail-view').classList.remove('open');
-  }
-
-  fetchPosts();
+renderFeatured();
+renderGrid();
 </script>
 </body>
 </html>
