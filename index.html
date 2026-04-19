@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -124,11 +125,7 @@
     try {
       const res = await fetch(`${NOTION_PROXY}/databases/${DATABASE_ID}/query`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${NOTION_TOKEN}`,
-          'Notion-Version': '2022-06-28',
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           filter: { property: '公開', checkbox: { equals: true } },
           sorts: [{ property: '公開日', direction: 'descending' }]
