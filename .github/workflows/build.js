@@ -1,0 +1,262 @@
+const https = require('https');
+const fs = require('fs');
+
+const TOKEN = process.env.NOTION_TOKEN;
+const DB_ID = process.env.DATABASE_ID;
+
+function notionRequest(path, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const req = https.request({
+      hostname: 'api.notion.com',
+      path: `/v1/${path}`,
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${TOKEN}`,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data),
+      }
+    }, res => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => resolve(JSON.parse(raw)));
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+function getYoutubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
+  return m ? m[1] : null;
+}
+
+function cardHTML(p) {
+  const ytId = getYoutubeId(p.youtubeUrl);
+  const imgHtml = ytId
+    ? `<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${p.title}">`
+    : `<div class="no-img">サムネイルなし</div>`;
+  return `<div class="card" onclick="openDetail('${p.id}')">
+    <div class="card-img">${imgHtml}</div>
+    <div class="card-cat">${p.cat}</div>
+    <div class="card-title">${p.title}</div>
+    <div class="card-date">${p.date}</div>
+  </div>`;
+}
+
+async function main() {
+  const result = await notionRequest(`databases/${DB_ID}/query`, {
+    filter: { property: '公開', checkbox: { equals: true } },
+    sorts: [{ property: '公開日', direction: 'descending' }]
+  });
+
+  const posts = result.results.map(page => {
+    const p = page.properties;
+    return {
+      id: page.id.replace(/-/g, ''),
+      title: p['タイトル']?.title?.[0]?.plain_text || '',
+      cat: p['カテゴリー']?.select?.name || '',
+      date: p['公開日']?.date?.start?.replace(/-/g, '.') || '',
+      youtubeUrl: p['YouTube URL']?.url || '',
+      point: p['動画について']?.rich_text?.[0]?.plain_text || '',
+      tools: p['使った道具']?.rich_text?.[0]?.plain_text || '',
+      memo: p['ひとこと']?.rich_text?.[0]?.plain_text || '',
+      pickup: p['ピックアップ']?.checkbox || false,
+    };
+  });
+
+  const postsJson = JSON.stringify(posts);
+
+  const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mameの穏やかなキッチン</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif; background: #fff; color: #1a1a1a; line-height: 1.7; }
+    .site { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .site-header { border-bottom: 0.5px solid #e0e0e0; padding-bottom: 2rem; margin-bottom: 2rem; }
+    .site-title { font-size: 18px; font-weight: 500; letter-spacing: 0.04em; }
+    .site-desc { font-size: 13px; margin-top: 1rem; line-height: 2.1; color: #1a1a1a; }
+    .site-desc .profile { margin-top: 0.75rem; font-size: 12px; color: #888; }
+    .nav-row { display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+    .nav { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav a { font-size: 13px; color: #888; text-decoration: none; cursor: pointer; }
+    .nav a.active { color: #1a1a1a; border-bottom: 1px solid #1a1a1a; padding-bottom: 2px; }
+    .search-wrap { position: relative; }
+    .search-wrap input { font-size: 13px; padding: 6px 12px 6px 30px; border: 0.5px solid #ccc; border-radius: 20px; background: #f7f7f7; color: #1a1a1a; width: 180px; outline: none; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.35; pointer-events: none; }
+    .section-heading { margin-bottom: 1.25rem; }
+    .section-heading .ja { font-size: 14px; font-weight: 500; }
+    .section-heading .en { font-size: 11px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
+    .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }
+    .scroll-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 0.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2rem; }
+    .card { cursor: pointer; }
+    .card-img { width: 100%; aspect-ratio: 16/10; background: #f3f3f3; border-radius: 8px; overflow: hidden; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .card-img .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #bbb; }
+    .card-cat { font-size: 11px; color: #999; margin-top: 8px; letter-spacing: 0.05em; }
+    .card-title { font-size: 14px; font-weight: 500; margin-top: 4px; line-height: 1.5; }
+    .card-date { font-size: 11px; color: #bbb; margin-top: 5px; }
+    .no-results { font-size: 14px; color: #999; padding: 2rem 0; }
+    .detail { display: none; }
+    .detail.open { display: block; }
+    .back-btn { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 6px; }
+    .detail-cat { font-size: 12px; color: #999; letter-spacing: 0.05em; }
+    .detail-title { font-size: 22px; font-weight: 500; margin-top: 6px; line-height: 1.5; }
+    .detail-date { font-size: 12px; color: #bbb; margin-top: 8px; }
+    .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
+    .yt-wrap iframe { width: 100%; height: 100%; border: none; }
+    .dl-section-label { font-size: 11px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 6px; margin-bottom: 1rem; }
+    .body-text { font-size: 14px; line-height: 1.9; margin-bottom: 2rem; }
+    .tools-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; }
+    .tool-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; font-size: 13px; }
+    .tool-name { flex: 1; }
+    .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+<div class="site">
+  <div class="site-header">
+    <div class="site-title">mameの穏やかなキッチン</div>
+    <div class="site-desc">
+      毎日の暮らしの中で、 ごはんを作って、食べる記録です。<br>
+      YouTubeで紹介しているレシピや工夫を、 少しだけ丁寧にまとめています。<br>
+      がんばりすぎず、ちゃんと食べることを大切に。
+      <div class="profile">管理栄養士。 夫と0歳の息子と暮らしています。</div>
+    </div>
+    <div class="nav-row">
+      <nav class="nav">
+        <a class="active" onclick="filterCat('all', this)">すべて</a>
+        <a onclick="filterCat('1週間献立', this)">1週間献立</a>
+        <a onclick="filterCat('せいろごはん', this)">せいろごはん</a>
+        <a onclick="filterCat('暮らし', this)">暮らし</a>
+      </nav>
+      <div class="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#1a1a1a" stroke-width="1.5">
+          <circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="13" y2="13"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="タイトルで検索" oninput="onSearch()">
+      </div>
+    </div>
+  </div>
+
+  <div id="list-view">
+    <div id="featured-sections">
+      <div class="section-heading">
+        <span class="ja">新着記事</span><span class="en">– New post –</span>
+      </div>
+      <div class="scroll-row" id="new-grid"></div>
+      <hr class="section-divider">
+      <div class="section-heading">
+        <span class="ja">ピックアップ</span><span class="en">– Pick up –</span>
+      </div>
+      <div class="scroll-row" id="pickup-grid"></div>
+      <hr class="section-divider">
+      <div class="section-heading">
+        <span class="ja">すべての記事</span><span class="en">– All posts –</span>
+      </div>
+    </div>
+    <div class="grid" id="card-grid"></div>
+    <div class="no-results" id="no-results" style="display:none">該当する記事が見つかりませんでした。</div>
+  </div>
+
+  <div class="detail" id="detail-view">
+    <span class="back-btn" onclick="closeDetail()">← 一覧に戻る</span>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+const posts = ${postsJson};
+let currentCat = 'all', currentQuery = '';
+
+function getYoutubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\\.be\\/|youtube\\.com\\/(?:watch\\?v=|embed\\/))([^&?/]+)/);
+  return m ? m[1] : null;
+}
+
+function cardHTML(p) {
+  const ytId = getYoutubeId(p.youtubeUrl);
+  const imgHtml = ytId
+    ? '<img src="https://img.youtube.com/vi/' + ytId + '/mqdefault.jpg" alt="' + p.title + '">'
+    : '<div class="no-img">サムネイルなし</div>';
+  return '<div class="card" onclick="openDetail(\\'' + p.id + '\\')">'
+    + '<div class="card-img">' + imgHtml + '</div>'
+    + '<div class="card-cat">' + p.cat + '</div>'
+    + '<div class="card-title">' + p.title + '</div>'
+    + '<div class="card-date">' + p.date + '</div>'
+    + '</div>';
+}
+
+function renderFeatured() {
+  document.getElementById('new-grid').innerHTML = posts.slice(0,3).map(cardHTML).join('');
+  document.getElementById('pickup-grid').innerHTML = posts.filter(p=>p.pickup).map(cardHTML).join('');
+}
+
+function renderGrid() {
+  const filtered = posts.filter(p =>
+    (currentCat === 'all' || p.cat === currentCat) &&
+    (!currentQuery || p.title.includes(currentQuery))
+  );
+  const isFiltering = currentCat !== 'all' || currentQuery !== '';
+  document.getElementById('featured-sections').style.display = isFiltering ? 'none' : '';
+  const grid = document.getElementById('card-grid');
+  const noRes = document.getElementById('no-results');
+  if (filtered.length === 0) { grid.innerHTML = ''; noRes.style.display = ''; }
+  else { noRes.style.display = 'none'; grid.innerHTML = filtered.map(cardHTML).join(''); }
+}
+
+function filterCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+function onSearch() {
+  currentQuery = document.getElementById('search-input').value.trim();
+  renderGrid();
+}
+
+function openDetail(id) {
+  const p = posts.find(x => x.id === id);
+  document.getElementById('list-view').style.display = 'none';
+  document.getElementById('detail-view').classList.add('open');
+  const ytId = getYoutubeId(p.youtubeUrl);
+  const ytHtml = ytId ? '<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/' + ytId + '" allowfullscreen></iframe></div>' : '';
+  const toolLines = p.tools ? p.tools.split('\\n').filter(Boolean) : [];
+  const toolsHtml = toolLines.map(t => '<div class="tool-item"><span class="tool-name">' + t + '</span></div>').join('');
+  document.getElementById('detail-content').innerHTML =
+    '<div class="detail-cat">' + p.cat + '</div>'
+    + '<div class="detail-title">' + p.title + '</div>'
+    + '<div class="detail-date">' + p.date + '</div>'
+    + ytHtml
+    + (p.point ? '<div class="dl-section-label">動画について</div><div class="body-text">' + p.point.replace(/\\n/g,'<br>') + '</div>' : '')
+    + (toolsHtml ? '<div class="dl-section-label">使った道具</div><div class="tools-list">' + toolsHtml + '</div>' : '')
+    + (p.memo ? '<div class="dl-section-label">ひとこと</div><div class="memo">' + p.memo.replace(/\\n/g,'<br>') + '</div>' : '');
+}
+
+function closeDetail() {
+  document.getElementById('list-view').style.display = '';
+  document.getElementById('detail-view').classList.remove('open');
+}
+
+renderFeatured();
+renderGrid();
+</script>
+</body>
+</html>`;
+
+  fs.writeFileSync('index.html', html);
+  console.log(`Built with ${posts.length} posts.`);
+}
+
+main().catch(console.error);
