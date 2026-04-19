@@ -119,4 +119,130 @@ async function main() {
     .section-heading .ja { font-size: 14px; font-weight: 500; }
     .section-heading .en { font-size: 11px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
     .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }
-    .scroll-row { display: grid; grid-t
+    .scroll-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 0.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2rem; }
+    .card { cursor: pointer; }
+    .card-img { width: 100%; aspect-ratio: 16/10; background: #f3f3f3; border-radius: 8px; overflow: hidden; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .card-img .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #bbb; }
+    .card-cat { font-size: 11px; color: #999; margin-top: 8px; letter-spacing: 0.05em; }
+    .card-title { font-size: 14px; font-weight: 500; margin-top: 4px; line-height: 1.5; }
+    .card-date { font-size: 11px; color: #bbb; margin-top: 5px; }
+    .no-results { font-size: 14px; color: #999; padding: 2rem 0; }
+    .detail { display: none; }
+    .detail.open { display: block; }
+    .back-btn { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 6px; }
+    .detail-cat { font-size: 12px; color: #999; letter-spacing: 0.05em; }
+    .detail-title { font-size: 22px; font-weight: 500; margin-top: 6px; line-height: 1.5; }
+    .detail-date { font-size: 12px; color: #bbb; margin-top: 8px; }
+    .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
+    .yt-wrap iframe { width: 100%; height: 100%; border: none; }
+    .dl-section-label { font-size: 11px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 6px; margin-bottom: 1rem; margin-top: 1.5rem; }
+    .body-text { font-size: 14px; line-height: 1.9; }
+    .tools-list { display: flex; flex-direction: column; gap: 10px; }
+    .tool-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; font-size: 13px; }
+    .tool-name { flex: 1; }
+    .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+<div class="site">
+  <div class="site-header">
+    <div class="site-title">mameの穏やかなキッチン</div>
+    <div class="site-desc">
+      毎日の暮らしの中で、 ごはんを作って、食べる記録です。<br>
+      YouTubeで紹介しているレシピや工夫を、 少しだけ丁寧にまとめています。<br>
+      がんばりすぎず、ちゃんと食べることを大切に。
+      <div class="profile">管理栄養士。 夫と0歳の息子と暮らしています。</div>
+    </div>
+    <div class="nav-row">
+      <nav class="nav">
+        <a class="active" onclick="filterCat('all',this)">すべて</a>
+        <a onclick="filterCat('1週間献立',this)">1週間献立</a>
+        <a onclick="filterCat('せいろごはん',this)">せいろごはん</a>
+        <a onclick="filterCat('暮らし',this)">暮らし</a>
+      </nav>
+      <div class="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#1a1a1a" stroke-width="1.5">
+          <circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="13" y2="13"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="タイトルで検索" oninput="onSearch()">
+      </div>
+    </div>
+  </div>
+
+  <div id="list-view">
+    <div id="featured-sections">
+      <div class="section-heading"><span class="ja">新着記事</span><span class="en">– New post –</span></div>
+      <div class="scroll-row">${newCards}</div>
+      <hr class="section-divider">
+      <div class="section-heading"><span class="ja">ピックアップ</span><span class="en">– Pick up –</span></div>
+      <div class="scroll-row">${pickupCards}</div>
+      <hr class="section-divider">
+      <div class="section-heading"><span class="ja">すべての記事</span><span class="en">– All posts –</span></div>
+    </div>
+    <div class="grid" id="card-grid">${allCards}</div>
+    <div class="no-results" id="no-results" style="display:none">該当する記事が見つかりませんでした。</div>
+  </div>
+
+  <div class="detail" id="detail-view">
+    <span class="back-btn" onclick="closeDetail()">← 一覧に戻る</span>
+    <div id="detail-content">${allDetails}</div>
+  </div>
+</div>
+
+<script>
+const cards = document.querySelectorAll('.card');
+let currentCat = 'all', currentQuery = '';
+
+cards.forEach(card => {
+  card.addEventListener('click', () => openDetail(card.dataset.id));
+});
+
+function filterCat(cat, el) {
+  currentCat = cat;
+  document.querySelectorAll('.nav a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+function onSearch() {
+  currentQuery = document.getElementById('search-input').value.trim();
+  renderGrid();
+}
+
+function renderGrid() {
+  const isFiltering = currentCat !== 'all' || currentQuery !== '';
+  document.getElementById('featured-sections').style.display = isFiltering ? 'none' : '';
+  let found = 0;
+  cards.forEach(card => {
+    const cat = card.querySelector('.card-cat').textContent;
+    const title = card.querySelector('.card-title').textContent;
+    const show = (currentCat === 'all' || cat === currentCat) && (!currentQuery || title.includes(currentQuery));
+    card.style.display = show ? '' : 'none';
+    if (show) found++;
+  });
+  document.getElementById('no-results').style.display = found === 0 ? '' : 'none';
+}
+
+function openDetail(id) {
+  document.getElementById('list-view').style.display = 'none';
+  document.getElementById('detail-view').classList.add('open');
+  document.querySelectorAll('.detail-inner').forEach(el => {
+    el.style.display = el.dataset.id === id ? '' : 'none';
+  });
+}
+
+function closeDetail() {
+  document.getElementById('list-view').style.display = '';
+  document.getElementById('detail-view').classList.remove('open');
+}
+</script>
+</body>
+</html>`;
+
+  fs.writeFileSync('index.html', html);
+  console.log(`Built with ${posts.length} posts.`);
+}
+
+main().catch(console.error);
