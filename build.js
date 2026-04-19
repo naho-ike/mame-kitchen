@@ -80,7 +80,12 @@ async function main() {
     const ytId = getYoutubeId(p.youtubeUrl);
     const ytHtml = ytId ? `<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>` : '';
     const toolLines = p.tools ? p.tools.split('\n').filter(Boolean) : [];
-    const toolsHtml = toolLines.map(t => `<div class="tool-item"><span class="tool-name">${escape(t)}</span></div>`).join('');
+    const toolsHtml = toolLines.map(t => {
+  const parts = t.split('|').map(s => s.trim());
+  const name = escape(parts[0]);
+  const link = parts[1] ? `<a class="tool-link" href="${parts[1]}" target="_blank">Rakuten ROOM →</a>` : '';
+  return `<div class="tool-item"><span class="tool-name">${name}</span>${link}</div>`;
+}).join('');
     return `<div class="detail-inner" data-id="${p.id}" style="display:none">
       <div class="detail-cat">${escape(p.cat)}</div>
       <div class="detail-title">${escape(p.title)}</div>
