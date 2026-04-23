@@ -56,13 +56,13 @@ async function main() {
       point: p['動画について']?.rich_text?.[0]?.plain_text || '',
       tools: p['使った道具']?.rich_text?.[0]?.plain_text || '',
       memo: p['ひとこと']?.rich_text?.[0]?.plain_text || '',
+      recipes: p['参考レシピ']?.rich_text?.[0]?.plain_text || '',
       pickup: p['ピックアップ']?.checkbox || false,
     };
   });
 
   console.log(`Fetched ${posts.length} posts`);
 
-  // カードHTML生成
   function cardHTML(p) {
     const ytId = getYoutubeId(p.youtubeUrl);
     const img = ytId
@@ -71,21 +71,26 @@ async function main() {
     return `<div class="card" data-id="${p.id}"><div class="card-img">${img}</div><div class="card-cat">${escape(p.cat)}</div><div class="card-title">${escape(p.title)}</div><div class="card-date">${escape(p.date)}</div></div>`;
   }
 
-  const newCards = posts.slice(0, 3).map(cardHTML).join('');
-  const pickupCards = posts.filter(p => p.pickup).map(cardHTML).join('');
-  const allCards = posts.map(cardHTML).join('');
-
-  // 記事詳細HTML生成
   function detailHTML(p) {
     const ytId = getYoutubeId(p.youtubeUrl);
     const ytHtml = ytId ? `<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>` : '';
+
     const toolLines = p.tools ? p.tools.split('\n').filter(Boolean) : [];
     const toolsHtml = toolLines.map(t => {
-  const parts = t.split('|').map(s => s.trim());
-  const name = escape(parts[0]);
-  const link = parts[1] ? `<a class="tool-link" href="${parts[1]}" target="_blank">Rakuten ROOM →</a>` : '';
-  return `<div class="tool-item"><span class="tool-name">${name}</span>${link}</div>`;
-}).join('');
+      const parts = t.split('|').map(s => s.trim());
+      const name = escape(parts[0]);
+      const link = parts[1] ? `<a class="tool-link" href="${parts[1]}" target="_blank">Rakuten ROOM →</a>` : '';
+      return `<div class="tool-item"><span class="tool-name">${name}</span>${link}</div>`;
+    }).join('');
+
+    const recipeLines = p.recipes ? p.recipes.split('\n').filter(Boolean) : [];
+    const recipesHtml = recipeLines.map(r => {
+      const parts = r.split('|').map(s => s.trim());
+      const name = escape(parts[0]);
+      const link = parts[1] ? `<a class="tool-link" href="${parts[1]}" target="_blank">レシピを見る →</a>` : '';
+      return `<div class="tool-item"><span class="tool-name">${name}</span>${link}</div>`;
+    }).join('');
+
     return `<div class="detail-inner" data-id="${p.id}" style="display:none">
       <div class="detail-cat">${escape(p.cat)}</div>
       <div class="detail-title">${escape(p.title)}</div>
@@ -94,9 +99,13 @@ async function main() {
       ${p.point ? `<div class="dl-section-label">動画について</div><div class="body-text">${escape(p.point).replace(/\n/g,'<br>')}</div>` : ''}
       ${toolsHtml ? `<div class="dl-section-label">使った道具</div><div class="tools-list">${toolsHtml}</div>` : ''}
       ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${escape(p.memo).replace(/\n/g,'<br>')}</div>` : ''}
+      ${recipesHtml ? `<div class="dl-section-label">参考レシピ</div><div class="tools-list">${recipesHtml}</div>` : ''}
     </div>`;
   }
 
+  const newCards = posts.slice(0, 3).map(cardHTML).join('');
+  const pickupCards = posts.filter(p => p.pickup).map(cardHTML).join('');
+  const allCards = posts.map(cardHTML).join('');
   const allDetails = posts.map(detailHTML).join('');
 
   const html = `<!DOCTYPE html>
@@ -147,6 +156,7 @@ async function main() {
     .tools-list { display: flex; flex-direction: column; gap: 10px; }
     .tool-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; font-size: 13px; }
     .tool-name { flex: 1; }
+    .tool-link { font-size: 12px; color: #888; text-decoration: underline; white-space: nowrap; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
   </style>
 </head>
