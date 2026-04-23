@@ -46,6 +46,7 @@
     .tools-list { display: flex; flex-direction: column; gap: 10px; }
     .tool-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; font-size: 13px; }
     .tool-name { flex: 1; }
+    .tool-link { font-size: 12px; color: #888; text-decoration: underline; white-space: nowrap; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
   </style>
 </head>
@@ -78,28 +79,20 @@
   <div id="list-view">
     <div id="featured-sections">
       <div class="section-heading"><span class="ja">新着記事</span><span class="en">– New post –</span></div>
-      <div class="scroll-row"><div class="card" data-id="347c5d1ae842809abffbd45e267c20cc"><div class="card-img"><div class="no-img">サムネイルなし</div></div><div class="card-cat">1週間献立</div><div class="card-title">テスト記事</div><div class="card-date">2026.04.19</div></div></div>
+      <div class="scroll-row"></div>
       <hr class="section-divider">
       <div class="section-heading"><span class="ja">ピックアップ</span><span class="en">– Pick up –</span></div>
       <div class="scroll-row"></div>
       <hr class="section-divider">
       <div class="section-heading"><span class="ja">すべての記事</span><span class="en">– All posts –</span></div>
     </div>
-    <div class="grid" id="card-grid"><div class="card" data-id="347c5d1ae842809abffbd45e267c20cc"><div class="card-img"><div class="no-img">サムネイルなし</div></div><div class="card-cat">1週間献立</div><div class="card-title">テスト記事</div><div class="card-date">2026.04.19</div></div></div>
+    <div class="grid" id="card-grid"></div>
     <div class="no-results" id="no-results" style="display:none">該当する記事が見つかりませんでした。</div>
   </div>
 
   <div class="detail" id="detail-view">
     <span class="back-btn" onclick="closeDetail()">← 一覧に戻る</span>
-    <div id="detail-content"><div class="detail-inner" data-id="347c5d1ae842809abffbd45e267c20cc" style="display:none">
-      <div class="detail-cat">1週間献立</div>
-      <div class="detail-title">テスト記事</div>
-      <div class="detail-date">2026.04.19</div>
-      
-      
-      
-      
-    </div></div>
+    <div id="detail-content"></div>
   </div>
 </div>
 
