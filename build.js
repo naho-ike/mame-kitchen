@@ -1,4 +1,3 @@
-process.env.NODE_ICU_DATA = '';
 const https = require('https');
 const fs = require('fs');
 
@@ -29,54 +28,46 @@ function notionRequest(path, body) {
   });
 }
 
-function escape(str) {
+// テキストをHTMLとして安全に出力する
+function safeHtml(str) {
   if (!str) return '';
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
-    .replace(/\uFE0F/g, '')
-    .replace(/\u20E3/g, '');
-}
-function cleanText(richText) {
-  if (!richText) return '';
-  return richText
-    .map(r => r.plain_text)
-    .join('')
-    .replace(/<br>/g, '\n')
-    .replace(/\uFE0F/g, '')
-    .replace(/\u200B/g, '')
-    .replace(/\u200C/g, '')
-    .replace(/\u200D/g, '')
-    .replace(/\uFEFF/g, '');
-}
-function getYoutubeId(url) {
-  if (!url) return null;
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
-  return m ? m[1] : null;
+    .replace(/'/g, '&#39;');
 }
 
-// Notionがマークダウン形式に変換したリンクを元に戻す
-// 例: [テキスト](URL) → テキスト | URL
-// 例: \| → |
-function cleanNotionText(str) {
-  if (!str) return '';
-  return str
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 | $2')
-    .replace(/\\\|/g, '|')
-    .replace(/｜/g, '|');
+// Notionのrich_textを改行付きテキストに変換する
+function richTextToPlain(richText) {
+  if (!richText || !Array.isArray(richText)) return '';
+  return richText.map(r => r.plain_text || '').join('');
 }
 
+// Notionが自動変換したリンクをパースする
 function parseLineWithLink(line) {
-  const cleaned = cleanNotionText(line);
+  // [テキスト](URL) 形式を変換
+  const mdLink = line.match(/^(.*?)\s*\[([^\]]*)\]\(([^)]+)\)\s*$/);
+  if (mdLink) {
+    const prefix = mdLink[1].replace(/\\\|/g, '|').replace(/｜/g, '|').replace(/\|$/, '').trim();
+    const url = mdLink[3];
+    return { name: prefix || mdLink[2], url };
+  }
+  // 通常の「名前 | URL」形式
+  const cleaned = line.replace(/\\\|/g, '|').replace(/｜/g, '|');
   const pipeIndex = cleaned.indexOf('|');
   if (pipeIndex === -1) return { name: cleaned.trim(), url: '' };
   return {
     name: cleaned.slice(0, pipeIndex).trim(),
     url: cleaned.slice(pipeIndex + 1).trim(),
   };
+}
+
+function getYoutubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
+  return m ? m[1] : null;
 }
 
 async function main() {
@@ -89,14 +80,14 @@ async function main() {
     const p = page.properties;
     return {
       id: page.id.replace(/-/g, ''),
-      title: p['タイトル']?.title?.[0]?.plain_text || '',
+      title: richTextToPlain(p['タイトル']?.title),
       cat: p['カテゴリー']?.select?.name || '',
       date: (p['公開日']?.date?.start || '').replace(/-/g, '.'),
       youtubeUrl: p['YouTube URL']?.url || '',
-      point: cleanText(p['動画について']?.rich_text),
-      tools: cleanText(p['使った道具']?.rich_text),
-      memo: cleanText(p['ひとこと']?.rich_text),
-      recipes: cleanText(p['参考レシピ']?.rich_text),
+      point: richTextToPlain(p['動画について']?.rich_text),
+      tools: richTextToPlain(p['使った道具']?.rich_text),
+      memo: richTextToPlain(p['ひとこと']?.rich_text),
+      recipes: richTextToPlain(p['参考レシピ']?.rich_text),
       pickup: p['ピックアップ']?.checkbox || false,
     };
   });
@@ -106,9 +97,14 @@ async function main() {
   function cardHTML(p) {
     const ytId = getYoutubeId(p.youtubeUrl);
     const img = ytId
-      ? `<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${escape(p.title)}">`
+      ? `<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${safeHtml(p.title)}">`
       : `<div class="no-img">サムネイルなし</div>`;
-    return `<div class="card" data-id="${p.id}"><div class="card-img">${img}</div><div class="card-cat">${escape(p.cat)}</div><div class="card-title">${escape(p.title)}</div><div class="card-date">${escape(p.date)}</div></div>`;
+    return `<div class="card" data-id="${p.id}"><div class="card-img">${img}</div><div class="card-cat">${safeHtml(p.cat)}</div><div class="card-title">${safeHtml(p.title)}</div><div class="card-date">${safeHtml(p.date)}</div></div>`;
+  }
+
+  function textToHtml(str) {
+    if (!str) return '';
+    return safeHtml(str).replace(/\n/g, '<br>');
   }
 
   function detailHTML(p) {
@@ -120,25 +116,25 @@ async function main() {
     const toolLines = p.tools ? p.tools.split('\n').filter(Boolean) : [];
     const toolsHtml = toolLines.map(line => {
       const { name, url } = parseLineWithLink(line);
-      const link = url ? `<a class="tool-link" href="${url}" target="_blank">Rakuten ROOM →</a>` : '';
-      return `<div class="tool-item"><span class="tool-name">${escape(name)}</span>${link}</div>`;
+      const link = url ? `<a class="tool-link" href="${safeHtml(url)}" target="_blank">Rakuten ROOM →</a>` : '';
+      return `<div class="tool-item"><span class="tool-name">${safeHtml(name)}</span>${link}</div>`;
     }).join('');
 
     const recipeLines = p.recipes ? p.recipes.split('\n').filter(Boolean) : [];
     const recipesHtml = recipeLines.map(line => {
       const { name, url } = parseLineWithLink(line);
-      const link = url ? `<a class="tool-link" href="${url}" target="_blank">レシピを見る →</a>` : '';
-      return `<div class="tool-item"><span class="tool-name">${escape(name)}</span>${link}</div>`;
+      const link = url ? `<a class="tool-link" href="${safeHtml(url)}" target="_blank">レシピを見る →</a>` : '';
+      return `<div class="tool-item"><span class="tool-name">${safeHtml(name)}</span>${link}</div>`;
     }).join('');
 
     return `<div class="detail-inner" data-id="${p.id}" style="display:none">
-      <div class="detail-cat">${escape(p.cat)}</div>
-      <div class="detail-title">${escape(p.title)}</div>
-      <div class="detail-date">${escape(p.date)}</div>
+      <div class="detail-cat">${safeHtml(p.cat)}</div>
+      <div class="detail-title">${safeHtml(p.title)}</div>
+      <div class="detail-date">${safeHtml(p.date)}</div>
       ${ytHtml}
-      ${p.point ? `<div class="dl-section-label">動画について</div><div class="body-text">${escape(p.point).replace(/\n/g,'<br>')}</div>` : ''}
+      ${p.point ? `<div class="dl-section-label">動画について</div><div class="body-text">${textToHtml(p.point)}</div>` : ''}
       ${toolsHtml ? `<div class="dl-section-label">使った道具</div><div class="tools-list">${toolsHtml}</div>` : ''}
-      ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${escape(p.memo).replace(/\n/g,'<br>')}</div>` : ''}
+      ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${textToHtml(p.memo)}</div>` : ''}
       ${recipesHtml ? `<div class="dl-section-label">参考レシピ</div><div class="tools-list">${recipesHtml}</div>` : ''}
     </div>`;
   }
@@ -151,18 +147,16 @@ async function main() {
   const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
- <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
-   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
   <title>mameの穏やかなキッチン</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif; background: #fff; color: #1a1a1a; line-height: 1.7; }
     .site { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
     .site-header { border-bottom: 0.5px solid #e0e0e0; padding-bottom: 2rem; margin-bottom: 2rem; }
-    .site-title { font-size: 18px; font-weight: 500; letter-spacing: 0.04em; }
+    .site-title { font-size: 22px; font-weight: 500; letter-spacing: 0.04em; }
     .site-desc { font-size: 13px; margin-top: 1rem; line-height: 2.1; }
     .site-desc .profile { margin-top: 0.75rem; font-size: 12px; color: #888; }
     .nav-row { display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; gap: 1rem; flex-wrap: wrap; }
@@ -204,28 +198,21 @@ async function main() {
     @media (max-width: 768px) {
       .site { padding: 1.25rem 1rem; }
       .site-title { font-size: 18px; }
-      .site-desc { font-size: 12px; line-height: 1.9; }
+      .site-desc { font-size: 12px; margin-top: 0.75rem; line-height: 1.9; }
+      .site-desc .profile { font-size: 11px; }
       .nav-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; }
       .nav { gap: 1rem; }
       .search-wrap input { width: 100%; }
       .scroll-row { grid-template-columns: 1fr; }
       .grid { grid-template-columns: 1fr; gap: 1.25rem; }
+      .section-divider { margin: 1.75rem 0; }
       .detail-title { font-size: 18px; }
-      .card-title { font-size: 13px; }
       .body-text { font-size: 13px; }
-      .tool-item { font-size: 12px; }
+      .tool-item { font-size: 12px; padding: 8px 10px; }
       .memo { font-size: 13px; }
+      .card-title { font-size: 13px; }
     }
   </style>
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-8MM6439TZJ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-8MM6439TZJ');
-</script>
 </head>
 <body>
 <div class="site">
