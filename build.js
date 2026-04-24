@@ -34,7 +34,10 @@ function escape(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, '')
+    .replace(/\uFE0F/g, '')
+    .replace(/\u20E3/g, '');
 }
 
 function getYoutubeId(url) {
@@ -137,8 +140,9 @@ async function main() {
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
+   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   <title>mameの穏やかなキッチン</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
