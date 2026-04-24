@@ -185,6 +185,21 @@ async function main() {
     .tool-name { flex: 1; }
     .tool-link { font-size: 12px; color: #888; text-decoration: underline; white-space: nowrap; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
+    @media (max-width: 768px) {
+      .site { padding: 1.25rem 1rem; }
+      .site-title { font-size: 16px; }
+      .site-desc { font-size: 12px; line-height: 1.9; }
+      .nav-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; }
+      .nav { gap: 1rem; }
+      .search-wrap input { width: 100%; }
+      .scroll-row { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; gap: 1.25rem; }
+      .detail-title { font-size: 18px; }
+      .card-title { font-size: 13px; }
+      .body-text { font-size: 13px; }
+      .tool-item { font-size: 12px; }
+      .memo { font-size: 13px; }
+    }
   </style>
 </head>
 <body>
