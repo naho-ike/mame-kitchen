@@ -194,7 +194,7 @@ async function main() {
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
     @media (max-width: 768px) {
       .site { padding: 1.25rem 1rem; }
-      .site-title { font-size: 16px; }
+      .site-title { font-size: 18px; }
       .site-desc { font-size: 12px; line-height: 1.9; }
       .nav-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; }
       .nav { gap: 1rem; }
