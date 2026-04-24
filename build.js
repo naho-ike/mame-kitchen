@@ -30,20 +30,11 @@ function notionRequest(path, body) {
 
 function escape(str) {
   if (!str) return '';
-  let result = '';
-  for (const char of str) {
-    const code = char.codePointAt(0);
-    if (code > 127) {
-      result += `&#${code};`;
-    } else {
-      result += char
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;');
-    }
-  }
-  return result;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function getYoutubeId(url) {
