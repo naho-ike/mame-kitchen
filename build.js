@@ -73,10 +73,10 @@ async function main() {
       cat: p['カテゴリー']?.select?.name || '',
       date: (p['公開日']?.date?.start || '').replace(/-/g, '.'),
       youtubeUrl: p['YouTube URL']?.url || '',
-      point: p['動画について']?.rich_text?.[0]?.plain_text || '',
-      tools: p['使った道具']?.rich_text?.[0]?.plain_text || '',
-      memo: p['ひとこと']?.rich_text?.[0]?.plain_text || '',
-      recipes: p['参考レシピ']?.rich_text?.[0]?.plain_text || '',
+      point: p['動画について']?.rich_text?.map(r => r.plain_text).join('') || '',
+      tools: p['使った道具']?.rich_text?.map(r => r.plain_text).join('') || '',
+      memo: p['ひとこと']?.rich_text?.map(r => r.plain_text).join('') || '',
+      recipes: p['参考レシピ']?.rich_text?.map(r => r.plain_text).join('') || '',
       pickup: p['ピックアップ']?.checkbox || false,
     };
   });
