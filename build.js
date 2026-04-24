@@ -46,16 +46,17 @@ function cleanNotionText(str) {
   if (!str) return '';
   return str
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 | $2')
-    .replace(/\\\|/g, '|');
+    .replace(/\\\|/g, '|')
+    .replace(/｜/g, '|');
 }
 
-// 「名前 | URL」形式の1行をパースする
 function parseLineWithLink(line) {
   const cleaned = cleanNotionText(line);
-  const parts = cleaned.split('|').map(s => s.trim());
+  const pipeIndex = cleaned.indexOf('|');
+  if (pipeIndex === -1) return { name: cleaned.trim(), url: '' };
   return {
-    name: parts[0] || '',
-    url: parts[1] || '',
+    name: cleaned.slice(0, pipeIndex).trim(),
+    url: cleaned.slice(pipeIndex + 1).trim(),
   };
 }
 
