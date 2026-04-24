@@ -40,7 +40,18 @@ function escape(str) {
     .replace(/\uFE0F/g, '')
     .replace(/\u20E3/g, '');
 }
-
+function cleanText(richText) {
+  if (!richText) return '';
+  return richText
+    .map(r => r.plain_text)
+    .join('')
+    .replace(/<br>/g, '\n')
+    .replace(/\uFE0F/g, '')
+    .replace(/\u200B/g, '')
+    .replace(/\u200C/g, '')
+    .replace(/\u200D/g, '')
+    .replace(/\uFEFF/g, '');
+}
 function getYoutubeId(url) {
   if (!url) return null;
   const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
@@ -82,10 +93,10 @@ async function main() {
       cat: p['カテゴリー']?.select?.name || '',
       date: (p['公開日']?.date?.start || '').replace(/-/g, '.'),
       youtubeUrl: p['YouTube URL']?.url || '',
-      point: (p['動画について']?.rich_text?.map(r => r.plain_text).join('') || '').replace(/<br>/g, '\n'),
-      tools: (p['使った道具']?.rich_text?.map(r => r.plain_text).join('') || '').replace(/<br>/g, '\n'),
-      memo: (p['ひとこと']?.rich_text?.map(r => r.plain_text).join('') || '').replace(/<br>/g, '\n'),
-      recipes: (p['参考レシピ']?.rich_text?.map(r => r.plain_text).join('') || '').replace(/<br>/g, '\n'),
+      point: cleanText(p['動画について']?.rich_text),
+      tools: cleanText(p['使った道具']?.rich_text),
+      memo: cleanText(p['ひとこと']?.rich_text),
+      recipes: cleanText(p['参考レシピ']?.rich_text),
       pickup: p['ピックアップ']?.checkbox || false,
     };
   });
