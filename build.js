@@ -39,6 +39,26 @@ function getYoutubeId(url) {
   return m ? m[1] : null;
 }
 
+// Notionがマークダウン形式に変換したリンクを元に戻す
+// 例: [テキスト](URL) → テキスト | URL
+// 例: \| → |
+function cleanNotionText(str) {
+  if (!str) return '';
+  return str
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 | $2')
+    .replace(/\\\|/g, '|');
+}
+
+// 「名前 | URL」形式の1行をパースする
+function parseLineWithLink(line) {
+  const cleaned = cleanNotionText(line);
+  const parts = cleaned.split('|').map(s => s.trim());
+  return {
+    name: parts[0] || '',
+    url: parts[1] || '',
+  };
+}
+
 async function main() {
   const result = await notionRequest(`databases/${DB_ID}/query`, {
     filter: { property: '公開', checkbox: { equals: true } },
@@ -73,22 +93,22 @@ async function main() {
 
   function detailHTML(p) {
     const ytId = getYoutubeId(p.youtubeUrl);
-    const ytHtml = ytId ? `<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>` : '';
+    const ytHtml = ytId
+      ? `<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>`
+      : '';
 
     const toolLines = p.tools ? p.tools.split('\n').filter(Boolean) : [];
-    const toolsHtml = toolLines.map(t => {
-      const parts = t.split('|').map(s => s.trim());
-      const name = escape(parts[0]);
-      const link = parts[1] ? `<a class="tool-link" href="${parts[1]}" target="_blank">Rakuten ROOM →</a>` : '';
-      return `<div class="tool-item"><span class="tool-name">${name}</span>${link}</div>`;
+    const toolsHtml = toolLines.map(line => {
+      const { name, url } = parseLineWithLink(line);
+      const link = url ? `<a class="tool-link" href="${url}" target="_blank">Rakuten ROOM →</a>` : '';
+      return `<div class="tool-item"><span class="tool-name">${escape(name)}</span>${link}</div>`;
     }).join('');
 
     const recipeLines = p.recipes ? p.recipes.split('\n').filter(Boolean) : [];
-    const recipesHtml = recipeLines.map(r => {
-      const parts = r.split('|').map(s => s.trim());
-      const name = escape(parts[0]);
-      const link = parts[1] ? `<a class="tool-link" href="${parts[1]}" target="_blank">レシピを見る →</a>` : '';
-      return `<div class="tool-item"><span class="tool-name">${name}</span>${link}</div>`;
+    const recipesHtml = recipeLines.map(line => {
+      const { name, url } = parseLineWithLink(line);
+      const link = url ? `<a class="tool-link" href="${url}" target="_blank">レシピを見る →</a>` : '';
+      return `<div class="tool-item"><span class="tool-name">${escape(name)}</span>${link}</div>`;
     }).join('');
 
     return `<div class="detail-inner" data-id="${p.id}" style="display:none">
