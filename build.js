@@ -1,3 +1,4 @@
+process.env.NODE_ICU_DATA = '';
 const https = require('https');
 const fs = require('fs');
 
@@ -139,7 +140,8 @@ async function main() {
   const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+ <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
