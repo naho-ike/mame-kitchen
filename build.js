@@ -138,6 +138,7 @@ async function main() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
   <title>mameの穏やかなキッチン</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
