@@ -158,6 +158,7 @@ async function main() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>mameの穏やかなキッチン</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -192,7 +193,7 @@ async function main() {
     .detail.open { display: block; }
     .back-btn { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 6px; }
     .detail-cat { font-size: 12px; color: #999; letter-spacing: 0.05em; }
-    .detail-title { font-size: 22px; font-weight: 500; margin-top: 6px; line-height: 1.5; }
+    .detail-title { font-size: 22px; font-weight: 500; margin-top: 6px; line-height: 1.5; font-variant-emoji: text; }
     .detail-date { font-size: 12px; color: #bbb; margin-top: 8px; }
     .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
     .yt-wrap iframe { width: 100%; height: 100%; border: none; }
