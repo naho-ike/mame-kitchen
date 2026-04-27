@@ -115,13 +115,15 @@ async function main() {
       return `<div class="tool-item"><span class="tool-name">${safeHtml(name)}</span>${link}</div>`;
     }).join('');
 
-    const menuLines = p.menu ? p.menu.split('\n').filter(Boolean) : [];
+  　const menuLines = p.menu ? p.menu.split('\n').filter(Boolean) : [];
     const menuHtml = menuLines.map(line => {
-      const cleaned = line.replace(/｜/g, '|');
-      const pipeIndex = cleaned.indexOf('|');
-      const name = pipeIndex === -1 ? cleaned.trim() : cleaned.slice(0, pipeIndex).trim();
-      const desc = pipeIndex === -1 ? '' : cleaned.slice(pipeIndex + 1).trim();
-      return `<div class="menu-item"><span class="menu-name">${safeHtml(name)}</span>${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}</div>`;
+      const cleaned = line.replace(/｜/g, '|').replace(/\\\|/g, '|');
+      const parts = cleaned.split('|').map(s => s.trim());
+      const name = parts[0] || '';
+      const desc = parts[1] || '';
+      const url = parts[2] || '';
+      const link = url ? `<a class="tool-link" href="${safeHtml(url)}" target="_blank">レシピを見る →</a>` : '';
+      return `<div class="menu-item"><span class="menu-name">${safeHtml(name)}</span>${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}${link}</div>`;
     }).join('');
 
     return `<div class="detail-inner" data-id="${p.id}" style="display:none">
