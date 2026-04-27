@@ -28,7 +28,6 @@ function notionRequest(path, body) {
   });
 }
 
-// テキストをHTMLとして安全に出力する
 function safeHtml(str) {
   if (!str) return '';
   return str
@@ -39,22 +38,18 @@ function safeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// Notionのrich_textを改行付きテキストに変換する
 function richTextToPlain(richText) {
   if (!richText || !Array.isArray(richText)) return '';
   return richText.map(r => r.plain_text || '').join('');
 }
 
-// Notionが自動変換したリンクをパースする
 function parseLineWithLink(line) {
-  // [テキスト](URL) 形式を変換
   const mdLink = line.match(/^(.*?)\s*\[([^\]]*)\]\(([^)]+)\)\s*$/);
   if (mdLink) {
     const prefix = mdLink[1].replace(/\\\|/g, '|').replace(/｜/g, '|').replace(/\|$/, '').trim();
     const url = mdLink[3];
     return { name: prefix || mdLink[2], url };
   }
-  // 通常の「名前 | URL」形式
   const cleaned = line.replace(/\\\|/g, '|').replace(/｜/g, '|');
   const pipeIndex = cleaned.indexOf('|');
   if (pipeIndex === -1) return { name: cleaned.trim(), url: '' };
@@ -128,12 +123,22 @@ async function main() {
       return `<div class="tool-item"><span class="tool-name">${safeHtml(name)}</span>${link}</div>`;
     }).join('');
 
+    const menuLines = p.menu ? p.menu.split('\n').filter(Boolean) : [];
+    const menuHtml = menuLines.map(line => {
+      const cleaned = line.replace(/｜/g, '|');
+      const pipeIndex = cleaned.indexOf('|');
+      const name = pipeIndex === -1 ? cleaned.trim() : cleaned.slice(0, pipeIndex).trim();
+      const desc = pipeIndex === -1 ? '' : cleaned.slice(pipeIndex + 1).trim();
+      return `<div class="menu-item"><span class="menu-name">${safeHtml(name)}</span>${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}</div>`;
+    }).join('');
+
     return `<div class="detail-inner" data-id="${p.id}" style="display:none">
       <div class="detail-cat">${safeHtml(p.cat)}</div>
       <div class="detail-title">${safeHtml(p.title)}</div>
       <div class="detail-date">${safeHtml(p.date)}</div>
       ${ytHtml}
       ${p.point ? `<div class="dl-section-label">動画について</div><div class="body-text">${textToHtml(p.point)}</div>` : ''}
+      ${menuHtml ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>` : ''}
       ${toolsHtml ? `<div class="dl-section-label">使った道具</div><div class="tools-list">${toolsHtml}</div>` : ''}
       ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${textToHtml(p.memo)}</div>` : ''}
       ${recipesHtml ? `<div class="dl-section-label">参考レシピ</div><div class="tools-list">${recipesHtml}</div>` : ''}
@@ -196,6 +201,10 @@ async function main() {
     .tool-name { flex: 1; }
     .tool-link { font-size: 12px; color: #888; text-decoration: underline; white-space: nowrap; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
+    .menu-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.5rem; }
+    .menu-item { display: flex; flex-direction: column; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; }
+    .menu-name { font-size: 13px; font-weight: 500; color: #1a1a1a; }
+    .menu-desc { font-size: 12px; color: #888; margin-top: 3px; }
     @media (max-width: 768px) {
       .site { padding: 1.25rem 1rem; }
       .site-title { font-size: 18px; }
