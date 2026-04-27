@@ -122,7 +122,7 @@ async function main() {
       const name = parts[0] || '';
       const desc = parts[1] || '';
       const url = parts[2] || '';
-      const link = url ? `<a class="tool-link" href="${safeHtml(url)}" target="_blank">レシピを見る →</a>` : '';
+      const link = url ? `<a class="menu-link" href="${safeHtml(url)}" target="_blank">レシピを見る →</a>` : '';
       return `<div class="menu-item"><span class="menu-name">${safeHtml(name)}</span>${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}${link}</div>`;
     }).join('');
 
@@ -195,9 +195,10 @@ async function main() {
     .tool-link { font-size: 12px; color: #888; text-decoration: underline; white-space: nowrap; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
     .menu-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 0.5rem; }
-    .menu-item { display: flex; flex-direction: column; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; }
+　　 .menu-item { display: flex; flex-direction: column; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; gap: 3px; }
     .menu-name { font-size: 13px; font-weight: 500; color: #1a1a1a; }
-    .menu-desc { font-size: 12px; color: #888; margin-top: 3px; }
+    .menu-desc { font-size: 12px; color: #888; }
+    .menu-link { font-size: 12px; color: #888; text-decoration: underline; margin-top: 2px; }
     @media (max-width: 768px) {
       .site { padding: 1.25rem 1rem; }
       .site-title { font-size: 18px; }
