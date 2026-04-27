@@ -30,12 +30,18 @@ function notionRequest(path, body) {
 
 function safeHtml(str) {
   if (!str) return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  let result = '';
+  for (const char of str) {
+    const code = char.codePointAt(0);
+    if (char === '&') result += '&amp;';
+    else if (char === '<') result += '&lt;';
+    else if (char === '>') result += '&gt;';
+    else if (char === '"') result += '&quot;';
+    else if (char === "'") result += '&#39;';
+    else if (code > 127) result += `&#${code};`;
+    else result += char;
+  }
+  return result;
 }
 
 function richTextToPlain(richText) {
