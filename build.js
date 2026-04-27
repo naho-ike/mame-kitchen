@@ -122,7 +122,7 @@ async function main() {
       const name = parts[0] || '';
       const desc = parts[1] || '';
       const url = parts[2] || '';
-      const link = url ? `<a class="menu-link" href="${safeHtml(url)}" target="_blank">レシピを見る →</a>` : '';
+      const link = url ? `<a class="menu-link" href="${safeHtml(url)}" target="_blank">参考レシピを見る →</a>` : '';
       return `<div class="menu-item"><span class="menu-name">${safeHtml(name)}</span>${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}${link}</div>`;
     }).join('');
 
