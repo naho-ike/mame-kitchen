@@ -30,18 +30,12 @@ function notionRequest(path, body) {
 
 function safeHtml(str) {
   if (!str) return '';
-  let result = '';
-  for (const char of str) {
-    const code = char.codePointAt(0);
-    if (char === '&') result += '&amp;';
-    else if (char === '<') result += '&lt;';
-    else if (char === '>') result += '&gt;';
-    else if (char === '"') result += '&quot;';
-    else if (char === "'") result += '&#39;';
-    else if (code > 127) result += `&#${code};`;
-    else result += char;
-  }
-  return result;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function richTextToPlain(richText) {
@@ -162,6 +156,8 @@ async function main() {
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>* { -webkit-text-size-adjust: 100%; }</style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
