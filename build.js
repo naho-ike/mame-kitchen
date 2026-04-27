@@ -82,7 +82,6 @@ async function main() {
       point: richTextToPlain(p['動画について']?.rich_text),
       tools: richTextToPlain(p['使った道具']?.rich_text),
       memo: richTextToPlain(p['ひとこと']?.rich_text),
-      recipes: richTextToPlain(p['参考レシピ']?.rich_text),
       menu: richTextToPlain(p['献立メモ']?.rich_text),
       pickup: p['ピックアップ']?.checkbox || false,
     };
@@ -116,13 +115,6 @@ async function main() {
       return `<div class="tool-item"><span class="tool-name">${safeHtml(name)}</span>${link}</div>`;
     }).join('');
 
-    const recipeLines = p.recipes ? p.recipes.split('\n').filter(Boolean) : [];
-    const recipesHtml = recipeLines.map(line => {
-      const { name, url } = parseLineWithLink(line);
-      const link = url ? `<a class="tool-link" href="${safeHtml(url)}" target="_blank">レシピを見る →</a>` : '';
-      return `<div class="tool-item"><span class="tool-name">${safeHtml(name)}</span>${link}</div>`;
-    }).join('');
-
     const menuLines = p.menu ? p.menu.split('\n').filter(Boolean) : [];
     const menuHtml = menuLines.map(line => {
       const cleaned = line.replace(/｜/g, '|');
@@ -141,8 +133,6 @@ async function main() {
       ${menuHtml ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>` : ''}
       ${toolsHtml ? `<div class="dl-section-label">使った道具</div><div class="tools-list">${toolsHtml}</div>` : ''}
       ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${textToHtml(p.memo)}</div>` : ''}
-      ${recipesHtml ? `<div class="dl-section-label">参考レシピ</div><div class="tools-list">${recipesHtml}</div>` : ''}
-    </div>`;
   }
 
   const newCards = posts.slice(0, 3).map(cardHTML).join('');
