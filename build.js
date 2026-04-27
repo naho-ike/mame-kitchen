@@ -88,6 +88,7 @@ async function main() {
       tools: richTextToPlain(p['使った道具']?.rich_text),
       memo: richTextToPlain(p['ひとこと']?.rich_text),
       recipes: richTextToPlain(p['参考レシピ']?.rich_text),
+      menu: richTextToPlain(p['献立メモ']?.rich_text),
       pickup: p['ピックアップ']?.checkbox || false,
     };
   });
