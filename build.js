@@ -40,7 +40,7 @@ function safeHtml(str) {
 
 function richTextToPlain(richText) {
   if (!richText || !Array.isArray(richText)) return '';
-  return richText.map(r => r.plain_text || '').join('').replace(/<br>/g, '\n');
+  return richText.map(r => r.plain_text || '').join('').replace(/<br\s*\/?>/gi, '\n');
 }
 
 function parseLineWithLink(line) {
