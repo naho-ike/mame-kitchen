@@ -41,13 +41,18 @@ function safeHtml(str) {
 function richTextToPlain(richText) {
   if (!richText || !Array.isArray(richText)) return '';
   return richText
-    .map(r => r.plain_text || '')
-    .join('')
+    .map(r => {
+      const text = r.plain_text || '';
+      return text;
+    })
+    .join('\n')
     .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/\n{3,}/g, '\n\n')
     .replace(/\uFE0F/g, '')
     .replace(/\u200B/g, '')
     .replace(/\uFEFF/g, '');
 }
+
 function parseLineWithLink(line) {
   const mdLink = line.match(/^(.*?)\s*\[([^\]]*)\]\(([^)]+)\)\s*$/);
   if (mdLink) {
