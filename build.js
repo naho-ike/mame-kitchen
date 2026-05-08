@@ -18,9 +18,9 @@ function notionRequest(path, body) {
         'Content-Length': Buffer.byteLength(data),
       }
     }, res => {
-      let raw = '';
-      res.on('data', c => raw += c);
-      res.on('end', () => resolve(JSON.parse(raw)));
+      const chunks = [];
+res.on('data', c => chunks.push(c));
+res.on('end', () => resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))));
     });
     req.on('error', reject);
     req.write(data);
