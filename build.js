@@ -119,26 +119,39 @@ async function main() {
       : '';
 
     const toolLines = p.tools ? p.tools.split('\n').filter(Boolean) : [];
-    const toolsHtml = toolLines.map(line => {
-      const { name, url } = parseLineWithLink(line);
-      const link = url ? `<a class="tool-link" href="${safeHtml(url)}" target="_blank">Rakuten ROOM →</a>` : '';
-      return `<div class="tool-item"><span class="tool-name">${safeHtml(name)}</span>${link}</div>`;
-    }).join('');
+const toolItems = [];
+for (const line of toolLines) {
+  if (/^https?:\/\//.test(line.trim())) {
+    if (toolItems.length > 0) toolItems[toolItems.length - 1].url = line.trim();
+  } else {
+    const { name, url } = parseLineWithLink(line);
+    toolItems.push({ name, url });
+  }
+}
+const toolsHtml = toolItems.map(({ name, url }) => {
+  const link = url ? `<a class="tool-link" href="${safeHtml(url)}" target="_blank">Rakuten ROOM →</a>` : '';
+  return `<div class="tool-item"><span class="tool-name">${safeHtml(name)}</span>${link}</div>`;
+}).join('');
 
   　const menuLines = p.menu ? p.menu.split('\n').filter(Boolean) : [];
-    const menuHtml = menuLines.map(line => {
+  const menuItems = [];
+  for (const line of menuLines) {
+    if (/^https?:\/\//.test(line.trim())) {
+      if (menuItems.length > 0) menuItems[menuItems.length - 1].url = line.trim();
+    } else {
       const cleaned = line.replace(/｜/g, '|').replace(/\\\|/g, '|');
       const parts = cleaned.split('|').map(s => s.trim());
-      const name = parts[0] || '';
-      const desc = parts[1] || '';
-      const url = parts[2] || '';
-      const link = url ? `<a class="menu-link" href="${safeHtml(url)}" target="_blank">参考レシピを見る →</a>` : '';
-      return `<div class="menu-item">
-        <span class="menu-name">${safeHtml(name)}</span>
-        ${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}
-        ${link}
-      </div>`;
-    }).join('');
+      menuItems.push({ name: parts[0] || '', desc: parts[1] || '', url: parts[2] || '' });
+    }
+  }
+  const menuHtml = menuItems.map(({ name, desc, url }) => {
+    const link = url ? `<a class="menu-link" href="${safeHtml(url)}" target="_blank">参考レシピを見る →</a>` : '';
+    return `<div class="menu-item">
+      <span class="menu-name">${safeHtml(name)}</span>
+      ${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}
+      ${link}
+    </div>`;
+  }).join('');
 
     return `<div class="detail-inner" data-id="${p.id}" style="display:none">
       <div class="detail-cat">${safeHtml(p.cat)}</div>
