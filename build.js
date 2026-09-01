@@ -1,8 +1,20 @@
 const https = require('https');
 const fs = require('fs');
+const path = require('path');
 
 const TOKEN = process.env.NOTION_TOKEN;
 const DB_ID = process.env.DATABASE_ID;
+const TOOLS_DB_ID = process.env.TOOLS_DATABASE_ID;
+
+// 道具の写真を保存するフォルダ（Notionの画像URLは1時間ほどで切れるため、
+// ビルド時にダウンロードしてリポジトリに置く）
+const IMAGE_DIR = 'images/tools';
+
+// 道具ページのカテゴリー表示順。Notionのカテゴリー名とそろえること
+const TOOL_CATEGORIES = [
+  { name: '調理器具・キッチングッズ', en: '– Kitchen –' },
+  { name: '日用品・暮らしの道具', en: '– Living –' },
+];
 
 function notionRequest(path, body) {
   return new Promise((resolve, reject) => {
@@ -19,13 +31,53 @@ function notionRequest(path, body) {
       }
     }, res => {
       const chunks = [];
-res.on('data', c => chunks.push(c));
-res.on('end', () => resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))));
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))));
     });
     req.on('error', reject);
     req.write(data);
     req.end();
   });
+}
+
+// 画像を1件ダウンロードして保存する。中身が前回と同じならgitが差分なしと判断するので、
+// 毎回上書きして問題ない
+function downloadImage(url, dest, redirects = 0) {
+  return new Promise((resolve, reject) => {
+    if (redirects > 5) return reject(new Error('リダイレクトが多すぎます'));
+    https.get(url, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        return downloadImage(res.headers.location, dest, redirects + 1).then(resolve, reject);
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      }
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        try {
+          fs.writeFileSync(dest, Buffer.concat(chunks));
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+function imageExt(url) {
+  const m = url.split('?')[0].match(/\.(jpe?g|png|webp|gif|avif)$/i);
+  return m ? m[0].toLowerCase() : '.jpg';
+}
+
+// Notionのファイルプロパティから1枚目のURLを取り出す
+function firstFileUrl(prop) {
+  const f = prop?.files?.[0];
+  if (!f) return '';
+  return f.type === 'external' ? (f.external?.url || '') : (f.file?.url || '');
 }
 
 function safeHtml(str) {
@@ -48,25 +100,9 @@ function richTextToPlain(richText) {
     .join('\n')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/\n{3,}/g, '\n\n')
-    .replace(/\uFE0F/g, '')
-    .replace(/\u200B/g, '')
-    .replace(/\uFEFF/g, '');
-}
-
-function parseLineWithLink(line) {
-  const mdLink = line.match(/^(.*?)\s*\[([^\]]*)\]\(([^)]+)\)\s*$/);
-  if (mdLink) {
-    const prefix = mdLink[1].replace(/\\\|/g, '|').replace(/｜/g, '|').replace(/\|$/, '').trim();
-    const url = mdLink[3];
-    return { name: prefix || mdLink[2], url };
-  }
-  const cleaned = line.replace(/\\\|/g, '|').replace(/｜/g, '|');
-  const pipeIndex = cleaned.indexOf('|');
-  if (pipeIndex === -1) return { name: cleaned.trim(), url: '' };
-  return {
-    name: cleaned.slice(0, pipeIndex).trim(),
-    url: cleaned.slice(pipeIndex + 1).trim(),
-  };
+    .replace(/️/g, '')
+    .replace(/​/g, '')
+    .replace(/﻿/g, '');
 }
 
 function getYoutubeId(url) {
@@ -75,112 +111,16 @@ function getYoutubeId(url) {
   return m ? m[1] : null;
 }
 
-async function main() {
-  const result = await notionRequest(`databases/${DB_ID}/query`, {
-    filter: { property: '公開', checkbox: { equals: true } },
-    sorts: [{ property: '公開日', direction: 'descending' }]
-  });
-
-  const posts = result.results.map(page => {
-    const p = page.properties;
-    return {
-      id: page.id.replace(/-/g, ''),
-      title: richTextToPlain(p['タイトル']?.title),
-      cat: p['カテゴリー']?.select?.name || '',
-      date: (p['公開日']?.date?.start || '').replace(/-/g, '.'),
-      youtubeUrl: p['YouTube URL']?.url || '',
-      point: richTextToPlain(p['動画について']?.rich_text),
-      tools: richTextToPlain(p['使った道具']?.rich_text),
-      memo: richTextToPlain(p['ひとこと']?.rich_text),
-      menu: richTextToPlain(p['献立メモ']?.rich_text),
-      pickup: p['ピックアップ']?.checkbox || false,
-    };
-  });
-
-  console.log(`Fetched ${posts.length} posts`);
-
-  function cardHTML(p) {
-    const ytId = getYoutubeId(p.youtubeUrl);
-    const img = ytId
-      ? `<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${safeHtml(p.title)}">`
-      : `<div class="no-img">サムネイルなし</div>`;
-    return `<div class="card" data-id="${p.id}"><div class="card-img">${img}</div><div class="card-cat">${safeHtml(p.cat)}</div><div class="card-title">${safeHtml(p.title)}</div><div class="card-date">${safeHtml(p.date)}</div></div>`;
-  }
-
-  function textToHtml(str) {
-    if (!str) return '';
-    return safeHtml(str).replace(/\n/g, '<br>');
-  }
-
-  function detailHTML(p) {
-    const ytId = getYoutubeId(p.youtubeUrl);
-    const ytHtml = ytId
-      ? `<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>`
-      : '';
-
-    const toolLines = p.tools ? p.tools.split('\n').filter(Boolean) : [];
-const toolItems = [];
-for (const line of toolLines) {
-  if (/^https?:\/\//.test(line.trim())) {
-    if (toolItems.length > 0) toolItems[toolItems.length - 1].url = line.trim();
-  } else {
-    const { name, url } = parseLineWithLink(line);
-    toolItems.push({ name, url });
-  }
+function textToHtml(str) {
+  if (!str) return '';
+  return safeHtml(str).replace(/\n/g, '<br>');
 }
-const toolsHtml = toolItems.map(({ name, url }) => {
-  const link = url ? `<a class="tool-link" href="${safeHtml(url)}" target="_blank">Rakuten ROOM →</a>` : '';
-  return `<div class="tool-item"><span class="tool-name">${safeHtml(name)}</span>${link}</div>`;
-}).join('');
 
-  　const menuLines = p.menu ? p.menu.split('\n').filter(Boolean) : [];
-  const menuItems = [];
-  for (const line of menuLines) {
-    if (/^https?:\/\//.test(line.trim())) {
-      if (menuItems.length > 0) menuItems[menuItems.length - 1].url = line.trim();
-    } else {
-      const cleaned = line.replace(/｜/g, '|').replace(/\\\|/g, '|');
-      const parts = cleaned.split('|').map(s => s.trim());
-      menuItems.push({ name: parts[0] || '', desc: parts[1] || '', url: parts[2] || '' });
-    }
-  }
-  const menuHtml = menuItems.map(({ name, desc, url }) => {
-    const link = url ? `<a class="menu-link" href="${safeHtml(url)}" target="_blank">参考レシピを見る →</a>` : '';
-    return `<div class="menu-item">
-      <span class="menu-name">${safeHtml(name)}</span>
-      ${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}
-      ${link}
-    </div>`;
-  }).join('');
+// ---------------------------------------------------------------
+// 共通パーツ（index.html と tools.html で使い回す）
+// ---------------------------------------------------------------
 
-    return `<div class="detail-inner" data-id="${p.id}" style="display:none">
-      <div class="detail-cat">${safeHtml(p.cat)}</div>
-      <div class="detail-title">${safeHtml(p.title)}</div>
-      <div class="detail-date">${safeHtml(p.date)}</div>
-      ${ytHtml}
-      ${p.point ? `<div class="dl-section-label">動画について</div><div class="body-text">${textToHtml(p.point)}</div>` : ''}
-      ${menuHtml ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>` : ''}
-      ${toolsHtml ? `<div class="dl-section-label">使った道具</div><div class="tools-list">${toolsHtml}</div>` : ''}
-      ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${textToHtml(p.memo)}</div>` : ''}
-    </div>`;
-  }
-
-  const newCards = posts.slice(0, 3).map(cardHTML).join('');
-  const pickupCards = posts.filter(p => p.pickup).map(cardHTML).join('');
-  const allCards = posts.map(cardHTML).join('');
-  const allDetails = posts.map(detailHTML).join('');
-
-  const html = `<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <style>* { -webkit-text-size-adjust: 100%; }</style>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>mameの穏やかなキッチン</title>
-  <style>
+const BASE_CSS = `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif; background: #fff; color: #1a1a1a; line-height: 1.7; }
     .site { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
@@ -198,7 +138,9 @@ const toolsHtml = toolItems.map(({ name, url }) => {
     .section-heading { margin-bottom: 1.25rem; }
     .section-heading .ja { font-size: 14px; font-weight: 500; }
     .section-heading .en { font-size: 11px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
-    .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }
+    .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }`;
+
+const INDEX_CSS = `
     .scroll-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 0.5rem; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2rem; }
     .card { cursor: pointer; }
@@ -219,12 +161,10 @@ const toolsHtml = toolItems.map(({ name, url }) => {
     .yt-wrap iframe { width: 100%; height: 100%; border: none; }
     .dl-section-label { font-size: 11px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 6px; margin-bottom: 1rem; margin-top: 1.5rem; }
     .body-text { font-size: 14px; line-height: 1.9; }
-    .tools-list { display: flex; flex-direction: column; gap: 10px; }
-    .tool-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: #f7f7f7; border-radius: 8px; font-size: 13px; }
-    .tool-name { flex: 1; }
-    .tool-link { font-size: 12px; color: #888; text-decoration: underline; white-space: nowrap; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
-　　 .menu-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0.5rem; }
+    .tools-note { background: #f7f7f7; border-radius: 8px; padding: 12px 14px; font-size: 13px; }
+    .tools-note a { color: #666; text-decoration: underline; }
+    .menu-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0.5rem; }
     .menu-item { display: flex; flex-direction: column; padding: 12px 14px; background: #f7f7f7; border-radius: 8px; gap: 4px; }
     .menu-name { font-size: 13px; font-weight: 500; color: #1a1a1a; }
     .menu-desc { font-size: 12px; color: #888; line-height: 1.6; }
@@ -242,12 +182,43 @@ const toolsHtml = toolItems.map(({ name, url }) => {
       .section-divider { margin: 1.75rem 0; }
       .detail-title { font-size: 18px; }
       .body-text { font-size: 13px; }
-      .tool-item { font-size: 12px; padding: 8px 10px; }
       .memo { font-size: 13px; }
       .card-title { font-size: 13px; }
+    }`;
+
+const TOOLS_CSS = `
+    .tools-lead { font-size: 13px; line-height: 2.1; max-width: 34em; }
+    .pr-note { display: inline-block; font-size: 11px; line-height: 1.6; color: #999; background: #f7f7f7; border-radius: 6px; padding: 7px 12px; margin-top: 1.25rem; }
+    .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2rem 1.75rem; }
+    .tool-card { display: flex; flex-direction: column; gap: 8px; border-top: 0.5px solid #e0e0e0; padding-top: 1rem; }
+    .tool-photo { aspect-ratio: 4/3; background: #f3f3f3; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .tool-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .tool-photo .no-img { font-size: 12px; color: #bbb; }
+    .tool-size { font-size: 11px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
+    .tool-title { font-size: 14px; font-weight: 500; line-height: 1.5; }
+    .tool-desc { font-size: 13px; line-height: 1.85; color: #555; }
+    .tool-shops { display: flex; gap: 8px; margin-top: auto; padding-top: 6px; }
+    .shop-btn { flex: 1; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
+    .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+    .tools-empty { font-size: 14px; color: #999; padding: 2rem 0; }
+    @media (max-width: 768px) {
+      .site { padding: 1.25rem 1rem; }
+      .site-title { font-size: 18px; }
+      .site-desc { font-size: 12px; margin-top: 0.75rem; line-height: 1.9; }
+      .site-desc .profile { font-size: 11px; }
+      .nav-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; }
+      .nav { gap: 1rem; }
+      .tools-lead { font-size: 12.5px; line-height: 1.95; }
+      .tool-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1.5rem 1.25rem; }
+      .tool-title { font-size: 13px; }
+      .tool-desc { font-size: 12.5px; }
+      .section-divider { margin: 1.75rem 0; }
     }
-  </style>
-  <!-- Google tag (gtag.js) -->
+    @media (prefers-reduced-motion: reduce) {
+      .shop-btn { transition: none; }
+    }`;
+
+const GA_TAG = `  <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-8MM6439TZJ"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -255,24 +226,182 @@ const toolsHtml = toolItems.map(({ name, url }) => {
   gtag('js', new Date());
 
   gtag('config', 'G-8MM6439TZJ');
-</script>
+</script>`;
+
+function pageHead(title, css) {
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>* { -webkit-text-size-adjust: 100%; }</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>${title}</title>
+  <style>${BASE_CSS}${css}
+  </style>
+${GA_TAG}
 </head>
-<body>
-<div class="site">
-  <div class="site-header">
-    <a class="site-title" href="/" onclick="location.reload(); return false;">mameの穏やかなキッチン</a>
-    <div class="site-desc">
+<body>`;
+}
+
+const SITE_DESC = `    <div class="site-desc">
       毎日の暮らしの中で、 ごはんを作って、食べる記録です。<br>
       YouTubeで紹介しているレシピや工夫を、 少しだけ丁寧にまとめています。<br>
       がんばりすぎず、ちゃんと食べることを大切に。
       <div class="profile">管理栄養士。 夫と0歳の息子と暮らしています。</div>
-    </div>
+    </div>`;
+
+// ---------------------------------------------------------------
+
+async function main() {
+  const result = await notionRequest(`databases/${DB_ID}/query`, {
+    filter: { property: '公開', checkbox: { equals: true } },
+    sorts: [{ property: '公開日', direction: 'descending' }]
+  });
+
+  const posts = result.results.map(page => {
+    const p = page.properties;
+    return {
+      id: page.id.replace(/-/g, ''),
+      title: richTextToPlain(p['タイトル']?.title),
+      cat: p['カテゴリー']?.select?.name || '',
+      date: (p['公開日']?.date?.start || '').replace(/-/g, '.'),
+      youtubeUrl: p['YouTube URL']?.url || '',
+      point: richTextToPlain(p['動画について']?.rich_text),
+      memo: richTextToPlain(p['ひとこと']?.rich_text),
+      menu: richTextToPlain(p['献立メモ']?.rich_text),
+      pickup: p['ピックアップ']?.checkbox || false,
+    };
+  });
+
+  console.log(`Fetched ${posts.length} posts`);
+
+  // ---- 道具データを取得 ----
+  let tools = [];
+  if (TOOLS_DB_ID) {
+    try {
+      const toolsResult = await notionRequest(`databases/${TOOLS_DB_ID}/query`, {
+        filter: { property: '公開', checkbox: { equals: true } },
+        sorts: [{ property: '並び順', direction: 'ascending' }]
+      });
+
+      if (!Array.isArray(toolsResult.results)) {
+        throw new Error(toolsResult.message || '道具データベースを読み込めませんでした');
+      }
+
+      tools = toolsResult.results.map(page => {
+        const p = page.properties;
+        return {
+          id: page.id.replace(/-/g, ''),
+          name: richTextToPlain(p['道具名']?.title),
+          cat: p['カテゴリー']?.select?.name || '',
+          note: richTextToPlain(p['ひとこと']?.rich_text),
+          size: richTextToPlain(p['サイズ']?.rich_text),
+          amazon: p['Amazon URL']?.url || '',
+          rakuten: p['楽天 URL']?.url || '',
+          photoUrl: firstFileUrl(p['写真']),
+          img: '',
+        };
+      });
+
+      console.log(`Fetched ${tools.length} tools`);
+
+      // 写真をダウンロードしてリポジトリに保存する
+      fs.mkdirSync(IMAGE_DIR, { recursive: true });
+      for (const t of tools) {
+        if (!t.photoUrl) continue;
+        const file = `${t.id}${imageExt(t.photoUrl)}`;
+        const dest = path.join(IMAGE_DIR, file);
+        try {
+          await downloadImage(t.photoUrl, dest);
+          t.img = `${IMAGE_DIR}/${file}`;
+        } catch (e) {
+          // 取得に失敗しても、前回ダウンロードした写真が残っていればそれを使う
+          console.error(`写真の取得に失敗しました: ${t.name} — ${e.message}`);
+          if (fs.existsSync(dest)) t.img = `${IMAGE_DIR}/${file}`;
+        }
+      }
+    } catch (e) {
+      console.error(`道具データの取得に失敗しました: ${e.message}`);
+      tools = [];
+    }
+  } else {
+    console.log('TOOLS_DATABASE_ID が未設定のため、道具ページは生成しません');
+  }
+
+  // ---- index.html ----
+
+  function cardHTML(p) {
+    const ytId = getYoutubeId(p.youtubeUrl);
+    const img = ytId
+      ? `<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${safeHtml(p.title)}">`
+      : `<div class="no-img">サムネイルなし</div>`;
+    return `<div class="card" data-id="${p.id}"><div class="card-img">${img}</div><div class="card-cat">${safeHtml(p.cat)}</div><div class="card-title">${safeHtml(p.title)}</div><div class="card-date">${safeHtml(p.date)}</div></div>`;
+  }
+
+  function detailHTML(p) {
+    const ytId = getYoutubeId(p.youtubeUrl);
+    const ytHtml = ytId
+      ? `<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>`
+      : '';
+
+    const menuLines = p.menu ? p.menu.split('\n').filter(Boolean) : [];
+    const menuItems = [];
+    for (const line of menuLines) {
+      if (/^https?:\/\//.test(line.trim())) {
+        if (menuItems.length > 0) menuItems[menuItems.length - 1].url = line.trim();
+      } else {
+        const cleaned = line.replace(/｜/g, '|').replace(/\\\|/g, '|');
+        const parts = cleaned.split('|').map(s => s.trim());
+        menuItems.push({ name: parts[0] || '', desc: parts[1] || '', url: parts[2] || '' });
+      }
+    }
+    const menuHtml = menuItems.map(({ name, desc, url }) => {
+      const link = url ? `<a class="menu-link" href="${safeHtml(url)}" target="_blank">参考レシピを見る →</a>` : '';
+      return `<div class="menu-item">
+        <span class="menu-name">${safeHtml(name)}</span>
+        ${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}
+        ${link}
+      </div>`;
+    }).join('');
+
+    // 使った道具は記事ごとに書かず、道具ページへ誘導する
+    const toolsLink = tools.length
+      ? `<div class="dl-section-label">使った道具</div>
+      <div class="tools-note"><a href="tools.html">愛用している道具は、道具のページにまとめています →</a></div>`
+      : '';
+
+    return `<div class="detail-inner" data-id="${p.id}" style="display:none">
+      <div class="detail-cat">${safeHtml(p.cat)}</div>
+      <div class="detail-title">${safeHtml(p.title)}</div>
+      <div class="detail-date">${safeHtml(p.date)}</div>
+      ${ytHtml}
+      ${p.point ? `<div class="dl-section-label">動画について</div><div class="body-text">${textToHtml(p.point)}</div>` : ''}
+      ${menuHtml ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>` : ''}
+      ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${textToHtml(p.memo)}</div>` : ''}
+      ${toolsLink}
+    </div>`;
+  }
+
+  const newCards = posts.slice(0, 3).map(cardHTML).join('');
+  const pickupCards = posts.filter(p => p.pickup).map(cardHTML).join('');
+  const allCards = posts.map(cardHTML).join('');
+  const allDetails = posts.map(detailHTML).join('');
+  const toolsNavLink = tools.length ? `\n        <a href="tools.html">道具</a>` : '';
+
+  const html = `${pageHead('mameの穏やかなキッチン', INDEX_CSS)}
+<div class="site">
+  <div class="site-header">
+    <a class="site-title" href="/" onclick="location.reload(); return false;">mameの穏やかなキッチン</a>
+${SITE_DESC}
     <div class="nav-row">
       <nav class="nav">
         <a class="active" onclick="filterCat('all',this)">すべて</a>
         <a onclick="filterCat('1週間献立',this)">1週間献立</a>
         <a onclick="filterCat('せいろごはん',this)">せいろごはん</a>
-        <a onclick="filterCat('暮らし',this)">暮らし</a>
+        <a onclick="filterCat('暮らし',this)">暮らし</a>${toolsNavLink}
       </nav>
       <div class="search-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#1a1a1a" stroke-width="1.5">
@@ -349,12 +478,94 @@ function closeDetail() {
   document.getElementById('list-view').style.display = '';
   document.getElementById('detail-view').classList.remove('open');
 }
+
+// 道具ページから「せいろごはん」などで戻ってきたときに、その分類で開く
+var initialCat = new URLSearchParams(location.search).get('cat');
+if (initialCat) {
+  document.querySelectorAll('.nav a').forEach(function (a) {
+    if (a.textContent.trim() === initialCat) filterCat(initialCat, a);
+  });
+}
 </script>
 </body>
 </html>`;
 
   fs.writeFileSync('index.html', html);
-  console.log(`Built with ${posts.length} posts.`);
+  console.log(`Built index.html with ${posts.length} posts.`);
+
+  // ---- tools.html ----
+
+  if (!tools.length) {
+    console.log('道具の登録がないため、tools.html は生成しませんでした');
+    return;
+  }
+
+  function toolCardHTML(t) {
+    const photo = t.img
+      ? `<img src="${safeHtml(t.img)}" alt="${safeHtml(t.name)}" loading="lazy">`
+      : `<div class="no-img">写真なし</div>`;
+    const shops = [
+      t.amazon ? `<a class="shop-btn" href="${safeHtml(t.amazon)}" target="_blank" rel="nofollow sponsored noopener">Amazon</a>` : '',
+      t.rakuten ? `<a class="shop-btn" href="${safeHtml(t.rakuten)}" target="_blank" rel="nofollow sponsored noopener">楽天</a>` : '',
+    ].filter(Boolean).join('');
+    return `<div class="tool-card">
+        <div class="tool-photo">${photo}</div>
+        ${t.size ? `<div class="tool-size">${safeHtml(t.size)}</div>` : ''}
+        <div class="tool-title">${safeHtml(t.name)}</div>
+        ${t.note ? `<div class="tool-desc">${textToHtml(t.note)}</div>` : ''}
+        ${shops ? `<div class="tool-shops">${shops}</div>` : ''}
+      </div>`;
+  }
+
+  // カテゴリー順に並べ、決めた順番にないカテゴリーは最後にまとめる
+  const known = TOOL_CATEGORIES.map(c => c.name);
+  const extras = [...new Set(tools.map(t => t.cat).filter(c => c && !known.includes(c)))];
+  const groups = [...TOOL_CATEGORIES, ...extras.map(name => ({ name, en: '' }))]
+    .map(c => ({ ...c, items: tools.filter(t => t.cat === c.name) }))
+    .filter(c => c.items.length);
+
+  const uncategorized = tools.filter(t => !t.cat);
+  if (uncategorized.length) groups.push({ name: 'そのほか', en: '', items: uncategorized });
+
+  const toolsSections = groups.map((g, i) => `
+      <div class="section-heading"><span class="ja">${safeHtml(g.name)}</span>${g.en ? `<span class="en">${g.en}</span>` : ''}</div>
+      <div class="tool-grid">${g.items.map(toolCardHTML).join('')}</div>${i < groups.length - 1 ? '\n      <hr class="section-divider">' : ''}`).join('');
+
+  const catLink = c => `<a href="index.html?cat=${encodeURIComponent(c)}">${c}</a>`;
+
+  const toolsHtml = `${pageHead('道具｜mameの穏やかなキッチン', TOOLS_CSS)}
+<div class="site">
+  <div class="site-header">
+    <a class="site-title" href="/">mameの穏やかなキッチン</a>
+${SITE_DESC}
+    <div class="nav-row">
+      <nav class="nav">
+        <a href="index.html">すべて</a>
+        ${catLink('1週間献立')}
+        ${catLink('せいろごはん')}
+        ${catLink('暮らし')}
+        <a class="active" href="tools.html">道具</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="section-heading"><span class="ja">愛用している道具</span><span class="en">– My favorites –</span></div>
+  <p class="tools-lead">
+    毎日使っていて、なくなったらまた同じものを買うと思う道具をまとめました。
+    動画でよく聞かれるものも、こちらに置いています。
+  </p>
+  <p class="pr-note">※ 本ページのリンクにはアフィリエイト広告を含みます。</p>
+  <hr class="section-divider">
+${toolsSections}
+</div>
+</body>
+</html>`;
+
+  fs.writeFileSync('tools.html', toolsHtml);
+  console.log(`Built tools.html with ${tools.length} tools.`);
 }
 
-main().catch(console.error);
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

@@ -21,12 +21,13 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           DATABASE_ID: 840343e3f2cd498389bcc369bd5a791b
+          TOOLS_DATABASE_ID: 0d88f72d7a944b94963e5b07a75d4739
         run: node build.js
 
       - name: Commit and push
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add index.html
+          git add index.html tools.html images
           git diff --staged --quiet || git commit -m "Update blog"
           git push
