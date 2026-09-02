@@ -12,8 +12,10 @@ const IMAGE_DIR = 'images/tools';
 
 // 道具ページのカテゴリー表示順。Notionのカテゴリー名とそろえること
 const TOOL_CATEGORIES = [
-  { name: '調理器具・キッチングッズ', en: '– Kitchen –' },
-  { name: '日用品・暮らしの道具', en: '– Living –' },
+  { name: 'せいろと蒸しもの', en: '– Steaming –' },
+  { name: '鍋とフライパン', en: '– Pots &amp; pans –' },
+  { name: '下ごしらえと保存', en: '– Prep &amp; storage –' },
+  { name: '暮らしの道具', en: '– Living –' },
 ];
 
 function notionRequest(path, body) {
