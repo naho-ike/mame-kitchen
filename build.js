@@ -199,8 +199,8 @@ const TOOLS_CSS = `
     .tool-size { font-size: 11px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
     .tool-title { font-size: 14px; font-weight: 500; line-height: 1.5; }
     .tool-desc { font-size: 13px; line-height: 1.85; color: #555; }
-    .tool-shops { display: flex; gap: 8px; margin-top: auto; padding-top: 6px; }
-    .shop-btn { flex: 1; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
+    .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
+    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
     .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
     .tools-empty { font-size: 14px; color: #999; padding: 2rem 0; }
     @media (max-width: 768px) {
@@ -303,6 +303,7 @@ async function main() {
           size: richTextToPlain(p['サイズ']?.rich_text),
           amazon: p['Amazon URL']?.url || '',
           rakuten: p['楽天 URL']?.url || '',
+          yahoo: p['Yahoo URL']?.url || '',
           photoUrl: firstFileUrl(p['写真']),
           img: '',
         };
@@ -506,10 +507,16 @@ if (initialCat) {
     const photo = t.img
       ? `<img src="${safeHtml(t.img)}" alt="${safeHtml(t.name)}" loading="lazy">`
       : `<div class="no-img">写真なし</div>`;
+    // リンクは「もしもアフィリエイト」で取得したものを入れる想定。
+    // 未入力のショップはボタンごと出さない
     const shops = [
-      t.amazon ? `<a class="shop-btn" href="${safeHtml(t.amazon)}" target="_blank" rel="nofollow sponsored noopener">Amazon</a>` : '',
-      t.rakuten ? `<a class="shop-btn" href="${safeHtml(t.rakuten)}" target="_blank" rel="nofollow sponsored noopener">楽天</a>` : '',
-    ].filter(Boolean).join('');
+      ['Amazon', t.amazon],
+      ['楽天', t.rakuten],
+      ['Yahoo!', t.yahoo],
+    ]
+      .filter(([, url]) => url)
+      .map(([label, url]) => `<a class="shop-btn" href="${safeHtml(url)}" target="_blank" rel="nofollow sponsored noopener">${label}</a>`)
+      .join('');
     return `<div class="tool-card">
         <div class="tool-photo">${photo}</div>
         ${t.size ? `<div class="tool-size">${safeHtml(t.size)}</div>` : ''}
