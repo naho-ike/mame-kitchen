@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>* { -webkit-text-size-adjust: 100%; }</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>道具｜mameの穏やかなキッチン</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif; background: #fff; color: #1a1a1a; line-height: 1.7; }
+    .site { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .site-header { border-bottom: 0.5px solid #e0e0e0; padding-bottom: 2rem; margin-bottom: 2rem; }
+    .site-title { font-size: 22px; font-weight: 500; letter-spacing: 0.04em; text-decoration: none; color: #1a1a1a; cursor: pointer; }
+    .site-desc { font-size: 13px; margin-top: 1rem; line-height: 2.1; }
+    .site-desc .profile { margin-top: 0.75rem; font-size: 12px; color: #888; }
+    .nav-row { display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+    .nav { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav a { font-size: 13px; color: #888; text-decoration: none; cursor: pointer; }
+    .nav a.active { color: #1a1a1a; border-bottom: 1px solid #1a1a1a; padding-bottom: 2px; }
+    .search-wrap { position: relative; }
+    .search-wrap input { font-size: 13px; padding: 6px 12px 6px 30px; border: 0.5px solid #ccc; border-radius: 20px; background: #f7f7f7; color: #1a1a1a; width: 180px; outline: none; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.35; pointer-events: none; }
+    .section-heading { margin-bottom: 1.25rem; }
+    .section-heading .ja { font-size: 14px; font-weight: 500; }
+    .section-heading .en { font-size: 11px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
+    .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }
+    .tools-lead { font-size: 13px; line-height: 2.1; max-width: 34em; }
+    .pr-note { display: inline-block; font-size: 11px; line-height: 1.6; color: #999; background: #f7f7f7; border-radius: 6px; padding: 7px 12px; margin-top: 1.25rem; }
+    .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2rem 1.75rem; }
+    .tool-card { display: flex; flex-direction: column; gap: 8px; border-top: 0.5px solid #e0e0e0; padding-top: 1rem; }
+    .tool-photo { aspect-ratio: 4/3; background: #f3f3f3; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .tool-photo img { width: 100%; height: 100%; object-fit: cover; }
+    .tool-photo .no-img { font-size: 12px; color: #bbb; }
+    .tool-size { font-size: 11px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
+    .tool-title { font-size: 14px; font-weight: 500; line-height: 1.5; }
+    .tool-desc { font-size: 13px; line-height: 1.85; color: #555; }
+    .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
+    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
+    .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+    .tools-empty { font-size: 14px; color: #999; padding: 2rem 0; }
+    @media (max-width: 768px) {
+      .site { padding: 1.25rem 1rem; }
+      .site-title { font-size: 18px; }
+      .site-desc { font-size: 12px; margin-top: 0.75rem; line-height: 1.9; }
+      .site-desc .profile { font-size: 11px; }
+      .nav-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; }
+      .nav { gap: 1rem; }
+      .tools-lead { font-size: 12.5px; line-height: 1.95; }
+      .tool-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1.5rem 1.25rem; }
+      .tool-title { font-size: 13px; }
+      .tool-desc { font-size: 12.5px; }
+      .section-divider { margin: 1.75rem 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .shop-btn { transition: none; }
+    }
+  </style>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8MM6439TZJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8MM6439TZJ');
+</script>
+</head>
+<body>
+<div class="site">
+  <div class="site-header">
+    <a class="site-title" href="/">mameの穏やかなキッチン</a>
+    <div class="site-desc">
+      毎日の暮らしの中で、 ごはんを作って、食べる記録です。<br>
+      YouTubeで紹介しているレシピや工夫を、 少しだけ丁寧にまとめています。<br>
+      がんばりすぎず、ちゃんと食べることを大切に。
+      <div class="profile">管理栄養士。 夫と0歳の息子と暮らしています。</div>
+    </div>
+    <div class="nav-row">
+      <nav class="nav">
+        <a href="index.html">すべて</a>
+        <a href="index.html?cat=1%E9%80%B1%E9%96%93%E7%8C%AE%E7%AB%8B">1週間献立</a>
+        <a href="index.html?cat=%E3%81%9B%E3%81%84%E3%82%8D%E3%81%94%E3%81%AF%E3%82%93">せいろごはん</a>
+        <a href="index.html?cat=%E6%9A%AE%E3%82%89%E3%81%97">暮らし</a>
+        <a class="active" href="tools.html">道具</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="section-heading"><span class="ja">愛用している道具</span><span class="en">– My favorites –</span></div>
+  <p class="tools-lead">
+    毎日使っていて、なくなったらまた同じものを買うと思う道具をまとめました。
+    動画でよく聞かれるものも、こちらに置いています。
+  </p>
+  <p class="pr-note">※ 本ページのリンクにはアフィリエイト広告を含みます。</p>
+  <hr class="section-divider">
+
+      <div class="section-heading"><span class="ja">せいろと蒸しもの</span><span class="en">– Steaming –</span></div>
+      <div class="tool-grid"><div class="tool-card">
+        <div class="tool-photo"><img src="images/tools/3cfc5d1ae8428080b0b9d3c33e2148e1.png" alt="かごや　杉せいろ24cm" loading="lazy"></div>
+        <div class="tool-size">24cm</div>
+        <div class="tool-title">かごや　杉せいろ24cm</div>
+        <div class="tool-desc">大きめが欲しくなって迎えたせいろ。<br>1段でメインのおかずが完成します。<br>他にも、とうもろこしなど長めの野菜を蒸すのにも丁度良いサイズ。<br>3〜4人用</div>
+        
+      </div><div class="tool-card">
+        <div class="tool-photo"><img src="images/tools/3cfc5d1ae84280bfb150f21e564f0785.png" alt="かごや　杉せいろ18cm" loading="lazy"></div>
+        <div class="tool-size">18cm</div>
+        <div class="tool-title">かごや　杉せいろ18cm</div>
+        <div class="tool-desc">はじめて迎えたせいろ。<br>手軽な大きさで、ワンプレート朝食や野菜の蒸しに丁度良いサイズ。<br>大きめのせいろを迎えても、ちょっと使いたい時に重宝します。<br>1〜2人用</div>
+        <div class="tool-shops"><a class="shop-btn" href="https://af.moshimo.com/af/c/click?a_id=5786973&amp;p_id=54&amp;pc_id=54&amp;pl_id=616&amp;url=https%3A%2F%2Fitem.rakuten.co.jp%2Fprokitchen%2Fkg0315%2F&amp;m=http%3A%2F%2Fm.rakuten.co.jp%2Fprokitchen%2Fi%2F10021167%2F" target="_blank" rel="nofollow sponsored noopener">楽天</a></div>
+      </div></div>
+</div>
+</body>
+</html>
