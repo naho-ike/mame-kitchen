@@ -453,8 +453,8 @@ async function main() {
 
     // 使った道具は記事ごとに書かず、道具ページへ誘導する
     const toolsLink = tools.length
-      ? `<div class="dl-section-label">使った道具</div>
-      <div class="tools-note"><a href="tools.html">愛用している道具は、道具のページにまとめています →</a></div>`
+      ? `<div class="dl-section-label">使ったもの</div>
+      <div class="tools-note"><a href="tools.html">愛用しているものは、愛用品のページにまとめています →</a></div>`
       : '';
 
     return `<div class="detail-inner" data-id="${p.id}" style="display:none">
@@ -473,7 +473,7 @@ async function main() {
   const pickupCards = posts.filter(p => p.pickup).map(cardHTML).join('');
   const allCards = posts.map(cardHTML).join('');
   const allDetails = posts.map(detailHTML).join('');
-  const toolsNavLink = tools.length ? `\n        <a href="tools.html">道具</a>` : '';
+  const toolsNavLink = tools.length ? `\n        <a href="tools.html">愛用品</a>` : '';
 
   const html = `${pageHead('mameの穏やかなキッチン', INDEX_CSS)}
 <div class="site">
@@ -625,7 +625,7 @@ if (initialCat) {
 
   const catLink = c => `<a href="index.html?cat=${encodeURIComponent(c)}">${c}</a>`;
 
-  const toolsHtml = `${pageHead('道具｜mameの穏やかなキッチン', TOOLS_CSS)}
+  const toolsHtml = `${pageHead('愛用品｜mameの穏やかなキッチン', TOOLS_CSS)}
 <div class="site">
   <div class="site-header">
     <a class="site-title" href="/">mameの穏やかなキッチン</a>
@@ -636,14 +636,14 @@ ${SITE_DESC}
         ${catLink('1週間献立')}
         ${catLink('せいろごはん')}
         ${catLink('暮らし')}
-        <a class="active" href="tools.html">道具</a>
+        <a class="active" href="tools.html">愛用品</a>
       </nav>
     </div>
   </div>
 
-  <div class="section-heading"><span class="ja">愛用している道具</span><span class="en">– My favorites –</span></div>
+  <div class="section-heading"><span class="ja">愛用しているもの</span><span class="en">– My favorites –</span></div>
   <div class="tools-lead">
-    <p>毎日使っていて、心地がいいなと思う道具をまとめています。</p>
+    <p>毎日使っていて、心地がいいなと思うものをまとめています。</p>
     <p>動画でよく聞かれるものも、こちらに置いています。</p>
   </div>
   <p class="pr-note">※ 本ページのリンクにはアフィリエイト広告を含みます。</p>
