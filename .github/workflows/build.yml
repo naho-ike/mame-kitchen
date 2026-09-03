@@ -17,6 +17,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 道具の写真を縮小するのに使う。入っていない実行環境のときだけ入れる
+      - name: Ensure ImageMagick
+        run: command -v convert >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick)
+
       - name: Fetch Notion data and build HTML
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}

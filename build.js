@@ -1,6 +1,7 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const TOKEN = process.env.NOTION_TOKEN;
 const DB_ID = process.env.DATABASE_ID;
@@ -68,6 +69,36 @@ function downloadImage(url, dest, redirects = 0) {
       });
     }).on('error', reject);
   });
+}
+
+// 写真はスマホで撮ったままだと数MBあるので、ビルド時に縮小して軽くする。
+// ImageMagick が見つからないときは元のまま使う（ビルドは止めない）
+const PHOTO_MAX_PX = 1200;
+const PHOTO_QUALITY = 82;
+
+function findImageMagick() {
+  for (const cmd of ['magick', 'convert']) {
+    try {
+      execFileSync(cmd, ['-version'], { stdio: 'ignore' });
+      return cmd;
+    } catch {
+      // 次の候補を試す
+    }
+  }
+  return null;
+}
+
+function shrinkImage(magick, src, dest) {
+  execFileSync(magick, [
+    src,
+    '-auto-orient',                       // スマホの回転情報を反映してから縮小する
+    '-resize', `${PHOTO_MAX_PX}x${PHOTO_MAX_PX}>`, // 大きいものだけ縮める
+    '-background', 'white', '-alpha', 'remove', '-alpha', 'off',
+    '-strip',                             // 撮影場所などのメタ情報を落とす
+    '-interlace', 'Plane',                // 粗い絵から段階的に表示される
+    '-quality', String(PHOTO_QUALITY),
+    dest,
+  ], { stdio: ['ignore', 'ignore', 'pipe'] });
 }
 
 function imageExt(url) {
@@ -341,18 +372,39 @@ async function main() {
 
       // 写真をダウンロードしてリポジトリに保存する
       fs.mkdirSync(IMAGE_DIR, { recursive: true });
+      const magick = findImageMagick();
+      if (!magick) {
+        console.error('ImageMagickが見つかりません。写真を縮小せずそのまま使います');
+      }
+
       for (const t of tools) {
         if (!t.photoUrl) continue;
-        const file = `${t.id}${imageExt(t.photoUrl)}`;
+        const file = `${t.id}${magick ? '.jpg' : imageExt(t.photoUrl)}`;
         const dest = path.join(IMAGE_DIR, file);
+        const tmp = path.join(IMAGE_DIR, `.tmp-${t.id}${imageExt(t.photoUrl)}`);
         try {
-          await downloadImage(t.photoUrl, dest);
+          await downloadImage(t.photoUrl, magick ? tmp : dest);
+          if (magick) {
+            shrinkImage(magick, tmp, dest);
+            const before = fs.statSync(tmp).size, after = fs.statSync(dest).size;
+            console.log(`写真を圧縮しました: ${t.name} — ${(before / 1e6).toFixed(1)}MB → ${(after / 1e3).toFixed(0)}KB`);
+          }
           t.img = `${IMAGE_DIR}/${file}`;
         } catch (e) {
-          // 取得に失敗しても、前回ダウンロードした写真が残っていればそれを使う
-          console.error(`写真の取得に失敗しました: ${t.name} — ${e.message}`);
+          // 取得や変換に失敗しても、前回の写真が残っていればそれを使う
+          console.error(`写真を用意できませんでした: ${t.name} — ${e.message}`);
           if (fs.existsSync(dest)) t.img = `${IMAGE_DIR}/${file}`;
+        } finally {
+          if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
         }
+      }
+
+      // 道具を削除したときや拡張子が変わったときに、使わない写真が残らないようにする
+      const keep = new Set(tools.map(t => t.img && path.basename(t.img)).filter(Boolean));
+      for (const f of fs.readdirSync(IMAGE_DIR)) {
+        if (keep.has(f)) continue;
+        fs.unlinkSync(path.join(IMAGE_DIR, f));
+        console.log(`使わなくなった写真を削除しました: ${f}`);
       }
     } catch (e) {
       console.error(`道具データの取得に失敗しました: ${e.message}`);
