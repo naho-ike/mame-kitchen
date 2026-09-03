@@ -75,6 +75,33 @@ function imageExt(url) {
   return m ? m[0].toLowerCase() : '.jpg';
 }
 
+// もしもアフィリエイトのリンクは、URLだけでなく <a href="..."><img ...> のHTMLごと
+// 貼られることがある。その場合は href の中身だけを取り出して使う
+function normalizeShopUrl(value, shop, toolName) {
+  if (!value) return '';
+  let url = String(value).trim();
+
+  const href = url.match(/href\s*=\s*["']([^"']+)["']/i);
+  if (href) url = href[1].trim();
+
+  // HTMLエンティティを戻す。&amp; のまま出力すると二重エスケープになる
+  url = url
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0?39;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&amp;/gi, '&');
+
+  // //af.moshimo.com/... のようにスキームが省略された形を補う
+  if (url.startsWith('//')) url = `https:${url}`;
+
+  if (!/^https?:\/\//i.test(url)) {
+    console.error(`${toolName} の「${shop}」がURLとして読めないため、ボタンを出しません: ${url.slice(0, 60)}`);
+    return '';
+  }
+  return url;
+}
+
 // Notionのファイルプロパティから1枚目のURLを取り出す
 function firstFileUrl(prop) {
   const f = prop?.files?.[0];
@@ -295,15 +322,16 @@ async function main() {
 
       tools = toolsResult.results.map(page => {
         const p = page.properties;
+        const name = richTextToPlain(p['道具名']?.title);
         return {
           id: page.id.replace(/-/g, ''),
-          name: richTextToPlain(p['道具名']?.title),
+          name,
           cat: p['カテゴリー']?.select?.name || '',
           note: richTextToPlain(p['ひとこと']?.rich_text),
           size: richTextToPlain(p['サイズ']?.rich_text),
-          amazon: p['Amazon URL']?.url || '',
-          rakuten: p['楽天 URL']?.url || '',
-          yahoo: p['Yahoo URL']?.url || '',
+          amazon: normalizeShopUrl(p['Amazon URL']?.url, 'Amazon URL', name),
+          rakuten: normalizeShopUrl(p['楽天 URL']?.url, '楽天 URL', name),
+          yahoo: normalizeShopUrl(p['Yahoo URL']?.url, 'Yahoo URL', name),
           photoUrl: firstFileUrl(p['写真']),
           img: '',
         };
