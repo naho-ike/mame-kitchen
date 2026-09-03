@@ -16,6 +16,7 @@ const TOOL_CATEGORIES = [
   { name: 'せいろと蒸しもの', en: '– Steaming –' },
   { name: '鍋とフライパン', en: '– Pots &amp; pans –' },
   { name: '下ごしらえと保存', en: '– Prep &amp; storage –' },
+  { name: '調味料', en: '– Seasonings –' },
   { name: '暮らしの道具', en: '– Living –' },
 ];
 
