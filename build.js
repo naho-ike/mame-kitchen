@@ -247,7 +247,7 @@ const INDEX_CSS = `
     }`;
 
 const TOOLS_CSS = `
-    .tools-lead { font-size: 13px; line-height: 2.1; max-width: 34em; }
+    .tools-lead { font-size: 13px; line-height: 2.1; max-width: 34em; display: flex; flex-direction: column; gap: 0.75rem; }
     .pr-note { display: inline-block; font-size: 11px; line-height: 1.6; color: #999; background: #f7f7f7; border-radius: 6px; padding: 7px 12px; margin-top: 1.25rem; }
     .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2rem 1.75rem; }
     .tool-card { display: flex; flex-direction: column; gap: 8px; border-top: 0.5px solid #e0e0e0; padding-top: 1rem; }
@@ -595,7 +595,9 @@ if (initialCat) {
       ['Yahoo!', t.yahoo],
     ]
       .filter(([, url]) => url)
-      .map(([label, url]) => `<a class="shop-btn" href="${safeHtml(url)}" target="_blank" rel="nofollow sponsored noopener">${label}</a>`)
+      // referrerpolicy はもしもが出力するリンクにも付いている。遷移先がhttpのとき、
+      // 既定の設定だとリファラが送られず、計測が通らないことがある
+      .map(([label, url]) => `<a class="shop-btn" href="${safeHtml(url)}" target="_blank" rel="nofollow sponsored noopener" referrerpolicy="no-referrer-when-downgrade">${label}</a>`)
       .join('');
     return `<div class="tool-card">
         <div class="tool-photo">${photo}</div>
@@ -639,10 +641,10 @@ ${SITE_DESC}
   </div>
 
   <div class="section-heading"><span class="ja">愛用している道具</span><span class="en">– My favorites –</span></div>
-  <p class="tools-lead">
-    毎日使っていて、心地がいいなと思う道具をまとめています。
-    動画でよく聞かれるものも、こちらに置いています。
-  </p>
+  <div class="tools-lead">
+    <p>毎日使っていて、心地がいいなと思う道具をまとめています。</p>
+    <p>動画でよく聞かれるものも、こちらに置いています。</p>
+  </div>
   <p class="pr-note">※ 本ページのリンクにはアフィリエイト広告を含みます。</p>
   <hr class="section-divider">
 ${toolsSections}
