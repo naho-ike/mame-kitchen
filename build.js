@@ -172,9 +172,30 @@ function getYoutubeId(url) {
   return m ? m[1] : null;
 }
 
-function textToHtml(str) {
-  if (!str) return '';
-  return safeHtml(str).replace(/\n/g, '<br>');
+// 本文を組み立てる。##見出し## の行は小見出しにして、あわせて目次も返す。
+// 記事はすべて1つのHTMLに入るので、idPrefix で見出しのidを記事ごとに分ける
+function textToHtml(str, idPrefix = '') {
+  if (!str) return { html: '', toc: '' };
+  const lines = str.split('\n');
+  let html = '';
+  let toc = '';
+  let headingIndex = 0;
+  for (const line of lines) {
+    const headingMatch = line.match(/^##(.+?)##$/);
+    if (headingMatch) {
+      headingIndex++;
+      const headingText = headingMatch[1];
+      const anchorId = `${idPrefix}heading-${headingIndex}`;
+      html += `<h3 class="body-heading" id="${anchorId}">${safeHtml(headingText)}</h3>`;
+      toc += `<li><a href="#${anchorId}">${safeHtml(headingText)}</a></li>`;
+    } else if (line.trim() === '') {
+      html += '<br>';
+    } else {
+      html += safeHtml(line) + '<br>';
+    }
+  }
+  // 末尾の改行は余白になるだけなので落とす
+  return { html: html.replace(/<br>$/, ''), toc };
 }
 
 // ---------------------------------------------------------------
@@ -222,6 +243,12 @@ const INDEX_CSS = `
     .yt-wrap iframe { width: 100%; height: 100%; border: none; }
     .dl-section-label { font-size: 11px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 6px; margin-bottom: 1rem; margin-top: 1.5rem; }
     .body-text { font-size: 14px; line-height: 1.9; }
+    .body-heading { font-size: 15px; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
+    .toc-box { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+    .toc-title { font-size: 12px; color: #999; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .toc-list a { font-size: 13px; color: #1a1a1a; text-decoration: none; }
+    .toc-list a:hover { text-decoration: underline; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
     .tools-note { background: #f7f7f7; border-radius: 8px; padding: 12px 14px; font-size: 13px; }
     .tools-note a { color: #666; text-decoration: underline; }
@@ -462,9 +489,13 @@ async function main() {
       <div class="detail-title">${safeHtml(p.title)}</div>
       <div class="detail-date">${safeHtml(p.date)}</div>
       ${ytHtml}
-      ${p.point ? `<div class="dl-section-label">動画について</div><div class="body-text">${textToHtml(p.point)}</div>` : ''}
+      ${p.point ? (() => {
+        const { html, toc } = textToHtml(p.point, `${p.id}-`);
+        const tocHtml = toc ? `<div class="toc-box"><div class="toc-title">目次</div><ul class="toc-list">${toc}</ul></div>` : '';
+        return `<div class="dl-section-label">動画について</div>${tocHtml}<div class="body-text">${html}</div>`;
+      })() : ''}
       ${menuHtml ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>` : ''}
-      ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${textToHtml(p.memo)}</div>` : ''}
+      ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${textToHtml(p.memo).html}</div>` : ''}
       ${toolsLink}
     </div>`;
   }
@@ -604,7 +635,7 @@ if (initialCat) {
         <div class="tool-photo">${photo}</div>
         ${t.size ? `<div class="tool-size">${safeHtml(t.size)}</div>` : ''}
         <div class="tool-title">${safeHtml(t.name)}</div>
-        ${t.note ? `<div class="tool-desc">${textToHtml(t.note)}</div>` : ''}
+        ${t.note ? `<div class="tool-desc">${textToHtml(t.note).html}</div>` : ''}
         ${shops ? `<div class="tool-shops">${shops}</div>` : ''}
       </div>`;
   }
