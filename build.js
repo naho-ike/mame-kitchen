@@ -10,6 +10,7 @@ const TOOLS_DB_ID = process.env.TOOLS_DATABASE_ID;
 // 道具の写真を保存するフォルダ（Notionの画像URLは1時間ほどで切れるため、
 // ビルド時にダウンロードしてリポジトリに置く）
 const IMAGE_DIR = 'images/tools';
+const POST_IMAGE_DIR = 'images/posts';
 
 // 道具ページのカテゴリー表示順。Notionのカテゴリー名とそろえること
 const TOOL_CATEGORIES = [
@@ -172,6 +173,148 @@ function getYoutubeId(url) {
   return m ? m[1] : null;
 }
 
+// ---------------------------------------------------------------
+// Notionのページ本文（ブロック）を読む
+// テキスト欄と違い、画像・箇条書き・Notionの太字などがそのまま使える
+// ---------------------------------------------------------------
+
+function notionGet(apiPath) {
+  return new Promise((resolve, reject) => {
+    https.get({
+      hostname: 'api.notion.com',
+      path: `/v1/${apiPath}`,
+      headers: {
+        'Authorization': `Bearer ${TOKEN}`,
+        'Notion-Version': '2022-06-28',
+      },
+    }, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+async function fetchBlocks(pageId) {
+  const out = [];
+  let cursor = null;
+  do {
+    const q = `blocks/${pageId}/children?page_size=100${cursor ? `&start_cursor=${cursor}` : ''}`;
+    const res = await notionGet(q);
+    if (!Array.isArray(res.results)) throw new Error(res.message || 'ページ本文を読めませんでした');
+    out.push(...res.results);
+    cursor = res.has_more ? res.next_cursor : null;
+  } while (cursor);
+  return out;
+}
+
+function plainOf(richText) {
+  return (richText || []).map(r => r.plain_text || '').join('');
+}
+
+// Notionの装飾をそのままHTMLにする。太字ボタンや斜体、リンクが効く
+function richTextToHtml(richText) {
+  return (richText || []).map(r => {
+    let t = safeHtml(r.plain_text || '').replace(/\n/g, '<br>');
+    const a = r.annotations || {};
+    if (a.code) t = `<code>${t}</code>`;
+    if (a.strikethrough) t = `<s>${t}</s>`;
+    if (a.italic) t = `<em>${t}</em>`;
+    if (a.bold) t = `<strong>${t}</strong>`;
+    if (r.href) t = `<a href="${safeHtml(r.href)}" target="_blank" rel="noopener">${t}</a>`;
+    return t;
+  }).join('');
+}
+
+function blocksToHtml(blocks, idPrefix) {
+  let html = '';
+  let toc = '';
+  let headingIndex = 0;
+  let listTag = null;
+  const skipped = new Set();
+
+  const closeList = () => {
+    if (listTag) { html += `</${listTag}>`; listTag = null; }
+  };
+  const openList = tag => {
+    if (listTag !== tag) { closeList(); html += `<${tag} class="body-list">`; listTag = tag; }
+  };
+
+  for (const b of blocks) {
+    const t = b.type;
+
+    if (t === 'bulleted_list_item' || t === 'numbered_list_item') {
+      openList(t === 'bulleted_list_item' ? 'ul' : 'ol');
+      html += `<li>${richTextToHtml(b[t].rich_text)}</li>`;
+      continue;
+    }
+    closeList();
+
+    if (t === 'paragraph') {
+      const inner = richTextToHtml(b.paragraph.rich_text);
+      if (inner) html += `<p>${inner}</p>`; // 空段落は余白になるだけなので出さない
+    } else if (t === 'heading_1' || t === 'heading_2' || t === 'heading_3') {
+      headingIndex++;
+      const anchorId = `${idPrefix}heading-${headingIndex}`;
+      html += `<h3 class="body-heading" id="${anchorId}">${richTextToHtml(b[t].rich_text)}</h3>`;
+      toc += `<li><a href="#${anchorId}">${safeHtml(plainOf(b[t].rich_text))}</a></li>`;
+    } else if (t === 'image') {
+      if (!b.localSrc) continue; // 取得に失敗した画像は出さない
+      const caption = richTextToHtml(b.image.caption);
+      const alt = safeHtml(plainOf(b.image.caption));
+      html += `<figure class="body-figure"><img src="${safeHtml(b.localSrc)}" alt="${alt}" loading="lazy">`
+        + (caption ? `<figcaption>${caption}</figcaption>` : '')
+        + `</figure>`;
+    } else if (t === 'quote') {
+      html += `<blockquote class="body-quote">${richTextToHtml(b.quote.rich_text)}</blockquote>`;
+    } else if (t === 'divider') {
+      html += '<hr class="body-divider">';
+    } else {
+      skipped.add(t);
+    }
+  }
+  closeList();
+
+  if (skipped.size) {
+    console.log(`  対応していないブロックは飛ばしました: ${[...skipped].join(', ')}`);
+  }
+  return { html, toc };
+}
+
+// 画像を1枚取得して、ImageMagickがあれば縮小して保存する。保存先の相対パスを返す
+async function saveImage(url, dir, baseName, magick) {
+  const file = `${baseName}${magick ? '.jpg' : imageExt(url)}`;
+  const dest = path.join(dir, file);
+  const tmp = path.join(dir, `.tmp-${baseName}${imageExt(url)}`);
+  try {
+    await downloadImage(url, magick ? tmp : dest);
+    if (magick) shrinkImage(magick, tmp, dest);
+    return `${dir}/${file}`;
+  } catch (e) {
+    // 取得に失敗しても、前回の画像が残っていればそれを使う
+    console.error(`写真を用意できませんでした: ${baseName} — ${e.message}`);
+    return fs.existsSync(dest) ? `${dir}/${file}` : '';
+  } finally {
+    if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
+  }
+}
+
+// 使わなくなった画像を消す
+function cleanImageDir(dir, keep) {
+  if (!fs.existsSync(dir)) return;
+  for (const f of fs.readdirSync(dir)) {
+    if (keep.has(f)) continue;
+    fs.unlinkSync(path.join(dir, f));
+    console.log(`使わなくなった写真を削除しました: ${dir}/${f}`);
+  }
+}
+
 // 1行の中の **強調** を太字にする。安全化したあとに置き換えないと
 // <strong> が実体参照になって、そのまま画面に出てしまう
 function inlineFormat(line) {
@@ -260,6 +403,16 @@ const INDEX_CSS = `
     .body-text { font-size: 17.5px; line-height: 2.25; }
     .body-text p { margin-bottom: 1.9em; }
     .body-text p:last-child { margin-bottom: 0; }
+    .body-text a { color: #1a1a1a; text-decoration: underline; text-underline-offset: 3px; }
+    .body-text code { font-size: 0.9em; background: #f2f2f2; border-radius: 4px; padding: 1px 5px; }
+    .body-figure { margin: 1.9em 0; }
+    .body-figure img { width: 100%; height: auto; border-radius: 8px; display: block; }
+    .body-figure figcaption { font-size: 13px; color: #999; line-height: 1.8; margin-top: 10px; }
+    .body-list { margin: 0 0 1.9em; padding-left: 1.4em; }
+    .body-list li { margin-bottom: 0.5em; }
+    .body-list li:last-child { margin-bottom: 0; }
+    .body-quote { margin: 1.9em 0; padding-left: 1.1em; border-left: 2px solid #e0e0e0; color: #555; }
+    .body-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5em 0; }
     .body-heading { font-size: 19px; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
     .toc-box { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
     .toc-title { font-size: 12px; color: #999; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
@@ -372,6 +525,7 @@ async function main() {
     const p = page.properties;
     return {
       id: page.id.replace(/-/g, ''),
+      pageId: page.id,
       title: richTextToPlain(p['タイトル']?.title),
       cat: p['カテゴリー']?.select?.name || '',
       date: (p['公開日']?.date?.start || '').replace(/-/g, '.'),
@@ -384,6 +538,39 @@ async function main() {
   });
 
   console.log(`Fetched ${posts.length} posts`);
+
+  // ---- ページ本文（ブロック）を読む ----
+  // 本文が書かれていればそちらを使い、空ならこれまでどおりテキスト欄を使う
+  const magick = findImageMagick();
+  if (!magick) console.error('ImageMagickが見つかりません。写真を縮小せずそのまま使います');
+
+  let blocksOk = true;
+  for (const post of posts) {
+    try {
+      const blocks = await fetchBlocks(post.pageId);
+      if (!blocks.length) continue;
+
+      const images = blocks.filter(b => b.type === 'image');
+      if (images.length) fs.mkdirSync(POST_IMAGE_DIR, { recursive: true });
+      for (const b of images) {
+        const src = b.image?.type === 'external' ? b.image.external?.url : b.image?.file?.url;
+        if (src) b.localSrc = await saveImage(src, POST_IMAGE_DIR, b.id.replace(/-/g, ''), magick);
+      }
+
+      post.body = blocksToHtml(blocks, `${post.id}-`);
+      console.log(`ページ本文を使います: ${post.title}（画像${images.length}枚）`);
+    } catch (e) {
+      blocksOk = false;
+      console.error(`ページ本文を読めませんでした: ${post.title} — ${e.message}`);
+    }
+  }
+
+  // すべて読めたときだけ、使わなくなった本文の画像を消す
+  if (blocksOk) {
+    const keep = new Set(posts.flatMap(p =>
+      [...(p.body?.html || '').matchAll(/images\/posts\/([^"]+)/g)].map(m => m[1])));
+    cleanImageDir(POST_IMAGE_DIR, keep);
+  }
 
   // ---- 道具データを取得 ----
   let tools = [];
@@ -419,11 +606,6 @@ async function main() {
 
       // 写真をダウンロードしてリポジトリに保存する
       fs.mkdirSync(IMAGE_DIR, { recursive: true });
-      const magick = findImageMagick();
-      if (!magick) {
-        console.error('ImageMagickが見つかりません。写真を縮小せずそのまま使います');
-      }
-
       for (const t of tools) {
         if (!t.photoUrl) continue;
         const file = `${t.id}${magick ? '.jpg' : imageExt(t.photoUrl)}`;
@@ -508,8 +690,9 @@ async function main() {
       <div class="detail-title">${safeHtml(p.title)}</div>
       <div class="detail-date">${safeHtml(p.date)}</div>
       ${ytHtml}
-      ${p.point ? (() => {
-        const { html, toc } = textToHtml(p.point, `${p.id}-`);
+      ${(p.body?.html || p.point) ? (() => {
+        // ページ本文が書かれていればそちらを優先する
+        const { html, toc } = p.body?.html ? p.body : textToHtml(p.point, `${p.id}-`);
         const tocHtml = toc ? `<div class="toc-box"><div class="toc-title">目次</div><ul class="toc-list">${toc}</ul></div>` : '';
         return `<div class="dl-section-label">このごはんについて</div>${tocHtml}<div class="body-text">${html}</div>`;
       })() : ''}
