@@ -247,7 +247,9 @@ function richTextToHtml(richText) {
     if (a.bold) t = `<strong>${t}</strong>`;
     if (r.href) t = `<a href="${safeHtml(r.href)}" ${linkAttrs(r.href)}>${t}</a>`;
     return t;
-  }).join('');
+  }).join('')
+    // テキスト欄から貼り付けたときのために、**強調** も太字として扱う
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
 function blocksToHtml(blocks, idPrefix) {
@@ -275,8 +277,20 @@ function blocksToHtml(blocks, idPrefix) {
     closeList();
 
     if (t === 'paragraph') {
-      const embed = embedFromLine(plainOf(b.paragraph.rich_text));
+      const plain = plainOf(b.paragraph.rich_text);
+      const embed = embedFromLine(plain);
       if (embed) { html += embed; continue; }
+
+      // テキスト欄から貼り付けたときのために、##見出し## も見出しとして扱う
+      const pasted = plain.trim().match(/^##(.+?)##$/);
+      if (pasted) {
+        headingIndex++;
+        const anchorId = `${idPrefix}heading-${headingIndex}`;
+        html += `<h3 class="body-heading" id="${anchorId}">${safeHtml(pasted[1])}</h3>`;
+        toc += `<li><a href="#${anchorId}">${safeHtml(pasted[1])}</a></li>`;
+        continue;
+      }
+
       const inner = richTextToHtml(b.paragraph.rich_text);
       if (inner) html += `<p>${inner}</p>`; // 空段落は余白になるだけなので出さない
     } else if (t === 'heading_1' || t === 'heading_2' || t === 'heading_3') {
