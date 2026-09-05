@@ -172,6 +172,12 @@ function getYoutubeId(url) {
   return m ? m[1] : null;
 }
 
+// 1行の中の **強調** を太字にする。安全化したあとに置き換えないと
+// <strong> が実体参照になって、そのまま画面に出てしまう
+function inlineFormat(line) {
+  return safeHtml(line).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
 // 本文を組み立てる。##見出し## の行は小見出しにして、あわせて目次も返す。
 // 記事はすべて1つのHTMLに入るので、idPrefix で見出しのidを記事ごとに分ける
 function textToHtml(str, idPrefix = '') {
@@ -200,7 +206,7 @@ function textToHtml(str, idPrefix = '') {
     } else if (line.trim() === '') {
       flush(); // 空行が段落の区切りになる
     } else {
-      paragraph.push(safeHtml(line));
+      paragraph.push(inlineFormat(line));
     }
   }
   flush();
@@ -508,7 +514,7 @@ async function main() {
         return `<div class="dl-section-label">このごはんについて</div>${tocHtml}<div class="body-text">${html}</div>`;
       })() : ''}
       ${menuHtml ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>` : ''}
-      ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${textToHtml(p.memo).html}</div>` : ''}
+      ${p.memo ? `<div class="dl-section-label">最後に</div><div class="memo">${textToHtml(p.memo, `${p.id}-memo-`).html}</div>` : ''}
       ${toolsLink}
     </div>`;
   }
@@ -648,7 +654,7 @@ if (initialCat) {
         <div class="tool-photo">${photo}</div>
         ${t.size ? `<div class="tool-size">${safeHtml(t.size)}</div>` : ''}
         <div class="tool-title">${safeHtml(t.name)}</div>
-        ${t.note ? `<div class="tool-desc">${textToHtml(t.note).html}</div>` : ''}
+        ${t.note ? `<div class="tool-desc">${textToHtml(t.note, `${t.id}-note-`).html}</div>` : ''}
         ${shops ? `<div class="tool-shops">${shops}</div>` : ''}
       </div>`;
   }
