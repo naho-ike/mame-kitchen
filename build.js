@@ -151,14 +151,14 @@ function safeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// Notionは、リンクや装飾のある箇所で1つの文章を複数に区切って返す。
-// 区切りは同じ文章の続きなので、そのままつなぐ。改行は各区切りの中に
-// 改行文字として入っているので、ここで足す必要はない
 function richTextToPlain(richText) {
   if (!richText || !Array.isArray(richText)) return '';
   return richText
-    .map(r => r.plain_text || '')
-    .join('')
+    .map(r => {
+      const text = r.plain_text || '';
+      return text;
+    })
+    .join('\n')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/️/g, '')
