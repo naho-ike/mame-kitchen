@@ -650,6 +650,18 @@ async function main() {
         if (src) b.localSrc = await saveImage(src, POST_IMAGE_DIR, b.id.replace(/-/g, ''), magick);
       }
 
+      // 画像だけを置いた状態でページ本文を採用すると、テキスト欄の文章が
+      // まるごと消えてしまう。文章が入っているときだけ採用する
+      const TEXT_BLOCKS = ['paragraph', 'heading_1', 'heading_2', 'heading_3',
+        'bulleted_list_item', 'numbered_list_item', 'quote'];
+      const hasText = blocks.some(b2 =>
+        TEXT_BLOCKS.includes(b2.type) && plainOf(b2[b2.type]?.rich_text).trim());
+      if (!hasText) {
+        console.error(`ページ本文に文章がないため、テキスト欄を使います: ${post.title}`
+          + '（画像を本文中に入れるには、文章もページ本文へ移してください）');
+        continue;
+      }
+
       // 本文に [[道具名]] を書けるよう、愛用品を取得したあとにHTML化する
       post.blocks = blocks;
       for (const b2 of images) if (b2.localSrc) usedPostImages.add(path.basename(b2.localSrc));
