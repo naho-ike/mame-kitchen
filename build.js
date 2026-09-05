@@ -260,15 +260,15 @@ const INDEX_CSS = `
     .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
     .toc-list a { font-size: 13px; color: #1a1a1a; text-decoration: none; }
     .toc-list a:hover { text-decoration: underline; }
-    .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
+    .memo { background: #f7f7f7; border-radius: 8px; padding: 1.15rem 1.4rem; font-size: 16px; line-height: 1.95; }
     .memo p + p { margin-top: 0.9em; }
-    .tools-note { background: #f7f7f7; border-radius: 8px; padding: 12px 14px; font-size: 13px; }
+    .tools-note { background: #f7f7f7; border-radius: 8px; padding: 14px 16px; font-size: 15px; }
     .tools-note a { color: #666; text-decoration: underline; }
     .menu-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0.5rem; }
     .menu-item { display: flex; flex-direction: column; padding: 12px 14px; background: #f7f7f7; border-radius: 8px; gap: 4px; }
-    .menu-name { font-size: 13px; font-weight: 500; color: #1a1a1a; }
-    .menu-desc { font-size: 12px; color: #888; line-height: 1.6; }
-    .menu-link { font-size: 12px; color: #888; text-decoration: underline; }
+    .menu-name { font-size: 16px; font-weight: 500; color: #1a1a1a; }
+    .menu-desc { font-size: 14.5px; color: #888; line-height: 1.75; }
+    .menu-link { font-size: 13.5px; color: #888; text-decoration: underline; }
     @media (max-width: 768px) {
       .site { padding: 1.25rem 1rem; }
       .site-title { font-size: 18px; }
@@ -282,24 +282,24 @@ const INDEX_CSS = `
       .section-divider { margin: 1.75rem 0; }
       .detail-title { font-size: 18px; }
       .body-text { font-size: 16.5px; }
-      .memo { font-size: 13px; }
+      .memo { font-size: 15px; }
       .card-title { font-size: 13px; }
     }`;
 
 const TOOLS_CSS = `
-    .tools-lead { font-size: 13px; line-height: 2.1; max-width: 34em; display: flex; flex-direction: column; gap: 0.75rem; }
+    .tools-lead { font-size: 15px; line-height: 2.1; max-width: 34em; display: flex; flex-direction: column; gap: 0.75rem; }
     .pr-note { display: inline-block; font-size: 11px; line-height: 1.6; color: #999; background: #f7f7f7; border-radius: 6px; padding: 7px 12px; margin-top: 1.25rem; }
     .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 2rem 1.75rem; }
     .tool-card { display: flex; flex-direction: column; gap: 8px; border-top: 0.5px solid #e0e0e0; padding-top: 1rem; }
     .tool-photo { aspect-ratio: 4/3; background: #f3f3f3; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
     .tool-photo img { width: 100%; height: 100%; object-fit: cover; }
     .tool-photo .no-img { font-size: 12px; color: #bbb; }
-    .tool-size { font-size: 11px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
-    .tool-title { font-size: 14px; font-weight: 500; line-height: 1.5; }
-    .tool-desc { font-size: 13px; line-height: 1.85; color: #555; }
+    .tool-size { font-size: 12px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
+    .tool-title { font-size: 16px; font-weight: 500; line-height: 1.55; }
+    .tool-desc { font-size: 15px; line-height: 1.95; color: #555; }
     .tool-desc p + p { margin-top: 0.6em; }
     .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
-    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
+    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
     .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
     .tools-empty { font-size: 14px; color: #999; padding: 2rem 0; }
     @media (max-width: 768px) {
@@ -309,10 +309,10 @@ const TOOLS_CSS = `
       .site-desc .profile { font-size: 11px; }
       .nav-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; }
       .nav { gap: 1rem; }
-      .tools-lead { font-size: 12.5px; line-height: 1.95; }
+      .tools-lead { font-size: 14px; line-height: 1.95; }
       .tool-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1.5rem 1.25rem; }
-      .tool-title { font-size: 13px; }
-      .tool-desc { font-size: 12.5px; }
+      .tool-title { font-size: 14.5px; }
+      .tool-desc { font-size: 13.5px; }
       .section-divider { margin: 1.75rem 0; }
     }
     @media (prefers-reduced-motion: reduce) {
