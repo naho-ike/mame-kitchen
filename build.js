@@ -275,6 +275,8 @@ function blocksToHtml(blocks, idPrefix) {
     closeList();
 
     if (t === 'paragraph') {
+      const embed = embedFromLine(plainOf(b.paragraph.rich_text));
+      if (embed) { html += embed; continue; }
       const inner = richTextToHtml(b.paragraph.rich_text);
       if (inner) html += `<p>${inner}</p>`; // 空段落は余白になるだけなので出さない
     } else if (t === 'heading_1' || t === 'heading_2' || t === 'heading_3') {
@@ -356,6 +358,9 @@ function textToHtml(str, idPrefix = '') {
   };
 
   for (const line of str.split('\n')) {
+    const embed = embedFromLine(line);
+    if (embed) { flush(); html += embed; continue; }
+
     const headingMatch = line.match(/^##(.+?)##$/);
     if (headingMatch) {
       flush();
@@ -372,6 +377,66 @@ function textToHtml(str, idPrefix = '') {
   }
   flush();
   return { html, toc };
+}
+
+// ---------------------------------------------------------------
+// 愛用品を記事本文に差し込む
+// 本文に [[道具名]] と書くと、愛用品ページと同じ内容のカードが入る
+// ---------------------------------------------------------------
+
+// 道具名 → 道具。main で愛用品を取得したあとに埋める
+const toolByName = new Map();
+
+// 表記ゆれを吸収する（空白・全角空白・大文字小文字）
+function toolKey(name) {
+  return (name || '').replace(/[\s\u3000]/g, '').toLowerCase();
+}
+
+function shopButtonsHTML(t) {
+  // リンクは「もしもアフィリエイト」で取得したものを入れる想定。
+  // 未入力のショップはボタンごと出さない
+  return [
+    ['Amazon', t.amazon],
+    ['楽天', t.rakuten],
+    ['Yahoo!', t.yahoo],
+  ]
+    .filter(([, url]) => url)
+    .map(([label, url]) => `<a class="shop-btn" href="${safeHtml(url)}" ${linkAttrs(url)}>${label}</a>`)
+    .join('');
+}
+
+// 道具の説明の中でさらに [[...]] を展開すると無限に入れ子になるので、
+// 展開中は目印を立てて、その間は文字として扱う
+let expandingEmbed = false;
+
+function toolEmbedHTML(t) {
+  expandingEmbed = true;
+  const desc = t.note ? textToHtml(t.note, `${t.id}-embed-`).html : '';
+  expandingEmbed = false;
+
+  const shops = shopButtonsHTML(t);
+  const photo = t.img
+    ? `<div class="tool-embed-photo"><img src="${safeHtml(t.img)}" alt="${safeHtml(t.name)}" loading="lazy"></div>`
+    : '';
+  return `<div class="tool-embed">${photo}<div class="tool-embed-body">`
+    + (t.size ? `<div class="tool-size">${safeHtml(t.size)}</div>` : '')
+    + `<div class="tool-embed-title">${safeHtml(t.name)}</div>`
+    + (desc ? `<div class="tool-embed-desc">${desc}</div>` : '')
+    + (shops ? `<div class="tool-shops">${shops}</div>` : '')
+    + `</div></div>`;
+}
+
+// [[道具名]] だけの行なら、その道具のカードを返す。見つからなければ null
+function embedFromLine(line) {
+  if (expandingEmbed) return null;
+  const m = line.trim().match(/^\[\[(.+?)\]\]$/);
+  if (!m) return null;
+  const t = toolByName.get(toolKey(m[1]));
+  if (!t) {
+    console.error(`愛用品に「${m[1]}」が見つかりません。道具名の表記をそろえてください`);
+    return null;
+  }
+  return toolEmbedHTML(t);
 }
 
 // ---------------------------------------------------------------
@@ -396,7 +461,12 @@ const BASE_CSS = `
     .section-heading { margin-bottom: 1.25rem; }
     .section-heading .ja { font-size: 18px; font-weight: 500; }
     .section-heading .en { font-size: 12px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
-    .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }`;
+    .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }
+    .tool-size { font-size: 12px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
+    .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
+    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
+    .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+    @media (prefers-reduced-motion: reduce) { .shop-btn { transition: none; } }`;
 
 const INDEX_CSS = `
     .scroll-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 0.5rem; }
@@ -431,6 +501,13 @@ const INDEX_CSS = `
     .body-list li:last-child { margin-bottom: 0; }
     .body-quote { margin: 1.9em 0; padding-left: 1.1em; border-left: 2px solid #e0e0e0; color: #555; }
     .body-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5em 0; }
+    .tool-embed { display: flex; gap: 1.1rem; background: #f7f7f7; border-radius: 8px; padding: 1.1rem 1.25rem; margin: 1.9em 0; }
+    .tool-embed-photo { flex: 0 0 150px; }
+    .tool-embed-photo img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; display: block; }
+    .tool-embed-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    .tool-embed-title { font-size: 16px; font-weight: 500; line-height: 1.55; }
+    .tool-embed-desc { font-size: 14px; line-height: 1.85; color: #555; }
+    .tool-embed-desc p + p { margin-top: 0.5em; }
     .body-heading { font-size: 19px; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
     .toc-box { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
     .toc-title { font-size: 12px; color: #999; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
@@ -460,6 +537,9 @@ const INDEX_CSS = `
       .detail-title { font-size: 18px; }
       .body-text { font-size: 15px; }
       .memo { font-size: 15px; }
+      .tool-embed { flex-direction: column; gap: 0.9rem; }
+      .tool-embed-photo { flex: none; }
+      .tool-embed-photo img { aspect-ratio: 4/3; }
       .card-title { font-size: 15.5px; }
     }`;
 
@@ -471,13 +551,9 @@ const TOOLS_CSS = `
     .tool-photo { aspect-ratio: 4/3; background: #f3f3f3; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
     .tool-photo img { width: 100%; height: 100%; object-fit: cover; }
     .tool-photo .no-img { font-size: 12px; color: #bbb; }
-    .tool-size { font-size: 12px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
     .tool-title { font-size: 17px; font-weight: 500; line-height: 1.6; }
     .tool-desc { font-size: 15px; line-height: 1.95; color: #555; }
     .tool-desc p + p { margin-top: 0.6em; }
-    .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
-    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
-    .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
     .tools-empty { font-size: 14px; color: #999; padding: 2rem 0; }
     @media (max-width: 768px) {
       .site { padding: 1.25rem 1rem; }
@@ -563,6 +639,7 @@ async function main() {
   if (!magick) console.error('ImageMagickが見つかりません。写真を縮小せずそのまま使います');
 
   let blocksOk = true;
+  const usedPostImages = new Set();
   for (const post of posts) {
     try {
       const blocks = await fetchBlocks(post.pageId);
@@ -575,7 +652,9 @@ async function main() {
         if (src) b.localSrc = await saveImage(src, POST_IMAGE_DIR, b.id.replace(/-/g, ''), magick);
       }
 
-      post.body = blocksToHtml(blocks, `${post.id}-`);
+      // 本文に [[道具名]] を書けるよう、愛用品を取得したあとにHTML化する
+      post.blocks = blocks;
+      for (const b2 of images) if (b2.localSrc) usedPostImages.add(path.basename(b2.localSrc));
       console.log(`ページ本文を使います: ${post.title}（画像${images.length}枚）`);
     } catch (e) {
       blocksOk = false;
@@ -585,9 +664,7 @@ async function main() {
 
   // すべて読めたときだけ、使わなくなった本文の画像を消す
   if (blocksOk) {
-    const keep = new Set(posts.flatMap(p =>
-      [...(p.body?.html || '').matchAll(/images\/posts\/([^"]+)/g)].map(m => m[1])));
-    cleanImageDir(POST_IMAGE_DIR, keep);
+    cleanImageDir(POST_IMAGE_DIR, usedPostImages);
   }
 
   // ---- 道具データを取得 ----
@@ -659,6 +736,12 @@ async function main() {
     }
   } else {
     console.log('TOOLS_DATABASE_ID が未設定のため、道具ページは生成しません');
+  }
+
+  // 本文の [[道具名]] を引けるようにしてから、ページ本文を組み立てる
+  for (const t of tools) toolByName.set(toolKey(t.name), t);
+  for (const post of posts) {
+    if (post.blocks) post.body = blocksToHtml(post.blocks, `${post.id}-`);
   }
 
   // ---- index.html ----
@@ -839,18 +922,7 @@ if (initialCat) {
     const photo = t.img
       ? `<img src="${safeHtml(t.img)}" alt="${safeHtml(t.name)}" loading="lazy">`
       : `<div class="no-img">写真なし</div>`;
-    // リンクは「もしもアフィリエイト」で取得したものを入れる想定。
-    // 未入力のショップはボタンごと出さない
-    const shops = [
-      ['Amazon', t.amazon],
-      ['楽天', t.rakuten],
-      ['Yahoo!', t.yahoo],
-    ]
-      .filter(([, url]) => url)
-      // referrerpolicy はもしもが出力するリンクにも付いている。遷移先がhttpのとき、
-      // 既定の設定だとリファラが送られず、計測が通らないことがある
-      .map(([label, url]) => `<a class="shop-btn" href="${safeHtml(url)}" target="_blank" rel="nofollow sponsored noopener" referrerpolicy="no-referrer-when-downgrade">${label}</a>`)
-      .join('');
+    const shops = shopButtonsHTML(t);
     return `<div class="tool-card">
         <div class="tool-photo">${photo}</div>
         ${t.size ? `<div class="tool-size">${safeHtml(t.size)}</div>` : ''}
