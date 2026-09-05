@@ -440,14 +440,31 @@ function toolEmbedHTML(t) {
     + `</div></div>`;
 }
 
+// 書いた名前から道具を探す。完全一致が優先だが、「かごや 杉せいろ 18cm」と
+// 「杉せいろ 18cm」のようにどちらかがもう一方を含む場合も、候補が1つなら採用する
+function findTool(name) {
+  const key = toolKey(name);
+  const exact = toolByName.get(key);
+  if (exact) return exact;
+
+  const hits = [...toolByName].filter(([k]) => k.includes(key) || key.includes(k));
+  if (hits.length === 1) return hits[0][1];
+  if (hits.length > 1) {
+    console.error(`「${name}」に当てはまる愛用品が複数あります: `
+      + hits.map(([, t]) => t.name).join(' / '));
+  }
+  return null;
+}
+
 // [[道具名]] だけの行なら、その道具のカードを返す。見つからなければ null
 function embedFromLine(line) {
   if (expandingEmbed) return null;
   const m = line.trim().match(/^\[\[(.+?)\]\]$/);
   if (!m) return null;
-  const t = toolByName.get(toolKey(m[1]));
+  const t = findTool(m[1]);
   if (!t) {
-    console.error(`愛用品に「${m[1]}」が見つかりません。道具名の表記をそろえてください`);
+    console.error(`愛用品に「${m[1]}」が見つかりません。登録されている道具名: `
+      + [...toolByName.values()].map(x => x.name).join(' / '));
     return null;
   }
   return toolEmbedHTML(t);
