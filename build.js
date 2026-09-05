@@ -399,8 +399,8 @@ const INDEX_CSS = `
     .detail-date { font-size: 12px; color: #bbb; margin-top: 8px; }
     .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
     .yt-wrap iframe { width: 100%; height: 100%; border: none; }
-    .dl-section-label { font-size: 11px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 6px; margin-bottom: 1rem; margin-top: 1.5rem; }
-    .body-text { font-size: 17.5px; line-height: 2.25; }
+    .dl-section-label { font-size: 14px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 8px; margin-bottom: 1rem; margin-top: 1.5rem; }
+    .body-text { font-size: 16px; line-height: 2.25; }
     .body-text p { margin-bottom: 1.9em; }
     .body-text p:last-child { margin-bottom: 0; }
     .body-text a { color: #1a1a1a; text-decoration: underline; text-underline-offset: 3px; }
@@ -440,7 +440,7 @@ const INDEX_CSS = `
       .grid { grid-template-columns: 1fr; gap: 1.25rem; }
       .section-divider { margin: 1.75rem 0; }
       .detail-title { font-size: 18px; }
-      .body-text { font-size: 16.5px; }
+      .body-text { font-size: 15px; }
       .memo { font-size: 15px; }
       .card-title { font-size: 15.5px; }
     }`;
