@@ -27,6 +27,11 @@
     .section-heading .ja { font-size: 18px; font-weight: 500; }
     .section-heading .en { font-size: 12px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
     .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }
+    .tool-size { font-size: 12px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
+    .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
+    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
+    .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+    @media (prefers-reduced-motion: reduce) { .shop-btn { transition: none; } }
     .scroll-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 0.5rem; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2rem; }
     .card { cursor: pointer; }
@@ -59,6 +64,13 @@
     .body-list li:last-child { margin-bottom: 0; }
     .body-quote { margin: 1.9em 0; padding-left: 1.1em; border-left: 2px solid #e0e0e0; color: #555; }
     .body-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5em 0; }
+    .tool-embed { display: flex; gap: 1.1rem; background: #f7f7f7; border-radius: 8px; padding: 1.1rem 1.25rem; margin: 1.9em 0; }
+    .tool-embed-photo { flex: 0 0 150px; }
+    .tool-embed-photo img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; display: block; }
+    .tool-embed-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    .tool-embed-title { font-size: 16px; font-weight: 500; line-height: 1.55; }
+    .tool-embed-desc { font-size: 14px; line-height: 1.85; color: #555; }
+    .tool-embed-desc p + p { margin-top: 0.5em; }
     .body-heading { font-size: 19px; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
     .toc-box { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
     .toc-title { font-size: 12px; color: #999; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
@@ -88,6 +100,9 @@
       .detail-title { font-size: 18px; }
       .body-text { font-size: 15px; }
       .memo { font-size: 15px; }
+      .tool-embed { flex-direction: column; gap: 0.9rem; }
+      .tool-embed-photo { flex: none; }
+      .tool-embed-photo img { aspect-ratio: 4/3; }
       .card-title { font-size: 15.5px; }
     }
   </style>

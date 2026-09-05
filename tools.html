@@ -27,6 +27,11 @@
     .section-heading .ja { font-size: 18px; font-weight: 500; }
     .section-heading .en { font-size: 12px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
     .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }
+    .tool-size { font-size: 12px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
+    .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
+    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
+    .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+    @media (prefers-reduced-motion: reduce) { .shop-btn { transition: none; } }
     .tools-lead { font-size: 15px; line-height: 2.1; max-width: 34em; display: flex; flex-direction: column; gap: 0.75rem; }
     .pr-note { display: inline-block; font-size: 11px; line-height: 1.6; color: #999; background: #f7f7f7; border-radius: 6px; padding: 7px 12px; margin-top: 1.25rem; }
     .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2rem; }
@@ -34,13 +39,9 @@
     .tool-photo { aspect-ratio: 4/3; background: #f3f3f3; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
     .tool-photo img { width: 100%; height: 100%; object-fit: cover; }
     .tool-photo .no-img { font-size: 12px; color: #bbb; }
-    .tool-size { font-size: 12px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
     .tool-title { font-size: 17px; font-weight: 500; line-height: 1.6; }
     .tool-desc { font-size: 15px; line-height: 1.95; color: #555; }
     .tool-desc p + p { margin-top: 0.6em; }
-    .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
-    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
-    .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
     .tools-empty { font-size: 14px; color: #999; padding: 2rem 0; }
     @media (max-width: 768px) {
       .site { padding: 1.25rem 1rem; }
@@ -55,9 +56,7 @@
       .tool-desc { font-size: 15px; }
       .section-divider { margin: 1.75rem 0; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      .shop-btn { transition: none; }
-    }
+
   </style>
   <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-8MM6439TZJ"></script>
