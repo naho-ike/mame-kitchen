@@ -227,8 +227,8 @@ const BASE_CSS = `
     .search-wrap input { font-size: 13px; padding: 6px 12px 6px 30px; border: 0.5px solid #ccc; border-radius: 20px; background: #f7f7f7; color: #1a1a1a; width: 180px; outline: none; }
     .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.35; pointer-events: none; }
     .section-heading { margin-bottom: 1.25rem; }
-    .section-heading .ja { font-size: 14px; font-weight: 500; }
-    .section-heading .en { font-size: 11px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
+    .section-heading .ja { font-size: 18px; font-weight: 500; }
+    .section-heading .en { font-size: 12px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
     .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }`;
 
 const INDEX_CSS = `
@@ -238,10 +238,10 @@ const INDEX_CSS = `
     .card-img { width: 100%; aspect-ratio: 16/10; background: #f3f3f3; border-radius: 8px; overflow: hidden; }
     .card-img img { width: 100%; height: 100%; object-fit: cover; }
     .card-img .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #bbb; }
-    .card-cat { font-size: 11px; color: #999; margin-top: 8px; letter-spacing: 0.05em; }
-    .card-title { font-size: 14px; font-weight: 500; margin-top: 4px; line-height: 1.5; }
-    .card-date { font-size: 11px; color: #bbb; margin-top: 5px; }
-    .no-results { font-size: 14px; color: #999; padding: 2rem 0; }
+    .card-cat { font-size: 12px; color: #999; margin-top: 10px; letter-spacing: 0.05em; }
+    .card-title { font-size: 17px; font-weight: 500; margin-top: 5px; line-height: 1.6; }
+    .card-date { font-size: 12.5px; color: #bbb; margin-top: 7px; }
+    .no-results { font-size: 16px; color: #999; padding: 2rem 0; }
     .detail { display: none; }
     .detail.open { display: block; }
     .back-btn { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 6px; }
@@ -283,7 +283,7 @@ const INDEX_CSS = `
       .detail-title { font-size: 18px; }
       .body-text { font-size: 16.5px; }
       .memo { font-size: 15px; }
-      .card-title { font-size: 13px; }
+      .card-title { font-size: 15.5px; }
     }`;
 
 const TOOLS_CSS = `
