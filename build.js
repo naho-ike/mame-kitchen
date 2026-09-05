@@ -568,9 +568,7 @@ const TOOLS_CSS = `
       .tool-desc { font-size: 15px; }
       .section-divider { margin: 1.75rem 0; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      .shop-btn { transition: none; }
-    }`;
+`;
 
 const GA_TAG = `  <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-8MM6439TZJ"></script>
