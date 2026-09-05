@@ -492,7 +492,7 @@ async function main() {
       ${p.point ? (() => {
         const { html, toc } = textToHtml(p.point, `${p.id}-`);
         const tocHtml = toc ? `<div class="toc-box"><div class="toc-title">目次</div><ul class="toc-list">${toc}</ul></div>` : '';
-        return `<div class="dl-section-label">動画について</div>${tocHtml}<div class="body-text">${html}</div>`;
+        return `<div class="dl-section-label">このごはんについて</div>${tocHtml}<div class="body-text">${html}</div>`;
       })() : ''}
       ${menuHtml ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>` : ''}
       ${p.memo ? `<div class="dl-section-label">ひとこと</div><div class="memo">${textToHtml(p.memo).html}</div>` : ''}
