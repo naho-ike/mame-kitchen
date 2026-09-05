@@ -218,6 +218,24 @@ function plainOf(richText) {
   return (richText || []).map(r => r.plain_text || '').join('');
 }
 
+// 広告リンクかどうか。Googleは広告リンクに sponsored を求めており、
+// もしもは遷移先がhttpのときリファラを必要とする
+const AFFILIATE_HOSTS = /(^|\.)(moshimo\.com|amazon\.co\.jp|amzn\.to|amzn\.asia|rakuten\.co\.jp|valuecommerce\.com|a8\.net|linksynergy\.com)$/i;
+
+function isAffiliate(url) {
+  try {
+    return AFFILIATE_HOSTS.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function linkAttrs(url) {
+  return isAffiliate(url)
+    ? 'target="_blank" rel="nofollow sponsored noopener" referrerpolicy="no-referrer-when-downgrade"'
+    : 'target="_blank" rel="noopener"';
+}
+
 // Notionの装飾をそのままHTMLにする。太字ボタンや斜体、リンクが効く
 function richTextToHtml(richText) {
   return (richText || []).map(r => {
@@ -227,7 +245,7 @@ function richTextToHtml(richText) {
     if (a.strikethrough) t = `<s>${t}</s>`;
     if (a.italic) t = `<em>${t}</em>`;
     if (a.bold) t = `<strong>${t}</strong>`;
-    if (r.href) t = `<a href="${safeHtml(r.href)}" target="_blank" rel="noopener">${t}</a>`;
+    if (r.href) t = `<a href="${safeHtml(r.href)}" ${linkAttrs(r.href)}>${t}</a>`;
     return t;
   }).join('');
 }
