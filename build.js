@@ -176,26 +176,35 @@ function getYoutubeId(url) {
 // 記事はすべて1つのHTMLに入るので、idPrefix で見出しのidを記事ごとに分ける
 function textToHtml(str, idPrefix = '') {
   if (!str) return { html: '', toc: '' };
-  const lines = str.split('\n');
   let html = '';
   let toc = '';
   let headingIndex = 0;
-  for (const line of lines) {
+  let paragraph = [];
+
+  // 溜めておいた行を1つの段落として書き出す
+  const flush = () => {
+    if (!paragraph.length) return;
+    html += `<p>${paragraph.join('<br>')}</p>`;
+    paragraph = [];
+  };
+
+  for (const line of str.split('\n')) {
     const headingMatch = line.match(/^##(.+?)##$/);
     if (headingMatch) {
+      flush();
       headingIndex++;
       const headingText = headingMatch[1];
       const anchorId = `${idPrefix}heading-${headingIndex}`;
       html += `<h3 class="body-heading" id="${anchorId}">${safeHtml(headingText)}</h3>`;
       toc += `<li><a href="#${anchorId}">${safeHtml(headingText)}</a></li>`;
     } else if (line.trim() === '') {
-      html += '<br>';
+      flush(); // 空行が段落の区切りになる
     } else {
-      html += safeHtml(line) + '<br>';
+      paragraph.push(safeHtml(line));
     }
   }
-  // 末尾の改行は余白になるだけなので落とす
-  return { html: html.replace(/<br>$/, ''), toc };
+  flush();
+  return { html, toc };
 }
 
 // ---------------------------------------------------------------
@@ -242,14 +251,17 @@ const INDEX_CSS = `
     .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
     .yt-wrap iframe { width: 100%; height: 100%; border: none; }
     .dl-section-label { font-size: 11px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 6px; margin-bottom: 1rem; margin-top: 1.5rem; }
-    .body-text { font-size: 14px; line-height: 1.9; }
-    .body-heading { font-size: 15px; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
+    .body-text { font-size: 17.5px; line-height: 2.25; }
+    .body-text p { margin-bottom: 1.9em; }
+    .body-text p:last-child { margin-bottom: 0; }
+    .body-heading { font-size: 19px; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
     .toc-box { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
     .toc-title { font-size: 12px; color: #999; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
     .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
     .toc-list a { font-size: 13px; color: #1a1a1a; text-decoration: none; }
     .toc-list a:hover { text-decoration: underline; }
     .memo { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; font-size: 14px; line-height: 1.8; }
+    .memo p + p { margin-top: 0.9em; }
     .tools-note { background: #f7f7f7; border-radius: 8px; padding: 12px 14px; font-size: 13px; }
     .tools-note a { color: #666; text-decoration: underline; }
     .menu-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0.5rem; }
@@ -269,7 +281,7 @@ const INDEX_CSS = `
       .grid { grid-template-columns: 1fr; gap: 1.25rem; }
       .section-divider { margin: 1.75rem 0; }
       .detail-title { font-size: 18px; }
-      .body-text { font-size: 13px; }
+      .body-text { font-size: 16.5px; }
       .memo { font-size: 13px; }
       .card-title { font-size: 13px; }
     }`;
@@ -285,6 +297,7 @@ const TOOLS_CSS = `
     .tool-size { font-size: 11px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
     .tool-title { font-size: 14px; font-weight: 500; line-height: 1.5; }
     .tool-desc { font-size: 13px; line-height: 1.85; color: #555; }
+    .tool-desc p + p { margin-top: 0.6em; }
     .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
     .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
     .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
