@@ -866,7 +866,7 @@ ${SITE_DESC}
         <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#1a1a1a" stroke-width="1.5">
           <circle cx="6" cy="6" r="4"/><line x1="9.5" y1="9.5" x2="13" y2="13"/>
         </svg>
-        <input type="text" id="search-input" placeholder="タイトルで検索" oninput="onSearch()">
+        <input type="text" id="search-input" placeholder="キーワードで検索" oninput="onSearch()">
       </div>
     </div>
   </div>
@@ -895,6 +895,16 @@ ${SITE_DESC}
 const cards = document.querySelectorAll('.card');
 let currentCat = 'all', currentQuery = '';
 
+// 記事ごとの検索用テキスト。見出しラベルは全記事に出るので対象に含めない
+var searchText = {};
+document.querySelectorAll('.detail-inner').forEach(function (el) {
+  var parts = ['.detail-title', '.body-text', '.menu-list', '.memo'].map(function (sel) {
+    var n = el.querySelector(sel);
+    return n ? n.textContent : '';
+  });
+  searchText[el.dataset.id] = parts.join(' ').toLowerCase();
+});
+
 cards.forEach(card => {
   card.addEventListener('click', () => openDetail(card.dataset.id));
 });
@@ -915,10 +925,12 @@ function renderGrid() {
   const isFiltering = currentCat !== 'all' || currentQuery !== '';
   document.getElementById('featured-sections').style.display = isFiltering ? 'none' : '';
   let found = 0;
+  const terms = currentQuery.toLowerCase().split(/[\s\u3000]+/).filter(Boolean);
   cards.forEach(card => {
     const cat = card.querySelector('.card-cat').textContent;
-    const title = card.querySelector('.card-title').textContent;
-    const show = (currentCat === 'all' || cat === currentCat) && (!currentQuery || title.includes(currentQuery));
+    const hay = searchText[card.dataset.id] || card.querySelector('.card-title').textContent.toLowerCase();
+    const show = (currentCat === 'all' || cat === currentCat)
+      && terms.every(t => hay.indexOf(t) !== -1);
     card.style.display = show ? '' : 'none';
     if (show) found++;
   });
