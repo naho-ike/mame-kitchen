@@ -236,10 +236,36 @@ function linkAttrs(url) {
     : 'target="_blank" rel="noopener"';
 }
 
+// 改行の位置を一度この印にしておいて、装飾を組み終えてからまとめてHTMLにする。
+// 区切りに使う空行（改行2つ以上）と、文の途中の改行を見分けるため
+const BR_MARK = '';
+
+// 文の途中の改行は、パソコンの幅に合わせて入れたもの。
+// スマホでは畳めるように印をつけておく（CSSで消す）
+function brMarksToHtml(s) {
+  return s
+    .replace(new RegExp(`${BR_MARK}{2,}`, 'g'), m => '<br>'.repeat(m.length))
+    .replace(new RegExp(BR_MARK, 'g'), '<br class="soft">');
+}
+
+// 改行だけを装飾のない切れ端に分ける。太字の末尾に改行があると
+// 改行どうしが <strong> をはさんで離れてしまい、空行だと気づけなくなるため
+function splitOutBreaks(richText) {
+  const out = [];
+  for (const r of richText || []) {
+    for (const part of (r.plain_text || '').split(/(\n+)/)) {
+      if (!part) continue;
+      if (part[0] === '\n') out.push({ plain_text: part, annotations: {}, href: null });
+      else out.push({ ...r, plain_text: part });
+    }
+  }
+  return out;
+}
+
 // Notionの装飾をそのままHTMLにする。太字ボタンや斜体、リンクが効く
 function richTextToHtml(richText) {
-  return (richText || []).map(r => {
-    let t = safeHtml(r.plain_text || '').replace(/\n/g, '<br>');
+  return brMarksToHtml(splitOutBreaks(richText).map(r => {
+    let t = safeHtml(r.plain_text || '').replace(/\n/g, BR_MARK);
     const a = r.annotations || {};
     if (a.code) t = `<code>${t}</code>`;
     if (a.strikethrough) t = `<s>${t}</s>`;
@@ -249,7 +275,7 @@ function richTextToHtml(richText) {
     return t;
   }).join('')
     // テキスト欄から貼り付けたときのために、**強調** も太字として扱う
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'));
 }
 
 // 1つの段落の中で Shift+Enter で改行している場合に備えて、装飾を保ったまま行ごとに分ける。
@@ -314,7 +340,8 @@ function blocksToHtml(blocks, idPrefix) {
         // 差し込みの前後にできた空行は、そのままだと余分な改行になるので落とす
         while (buf.length && !buf[0]) buf.shift();
         while (buf.length && !buf[buf.length - 1]) buf.pop();
-        if (buf.length) html += `<p>${buf.join('<br>')}</p>`;
+        // 空行はそのまま区切りの空きに、1つだけの改行はスマホで畳める印にする
+        if (buf.length) html += `<p>${brMarksToHtml(buf.join(BR_MARK))}</p>`;
         buf = [];
       };
 
@@ -412,7 +439,7 @@ function textToHtml(str, idPrefix = '') {
   // 溜めておいた行を1つの段落として書き出す
   const flush = () => {
     if (!paragraph.length) return;
-    html += `<p>${paragraph.join('<br>')}</p>`;
+    html += `<p>${paragraph.join('<br class="soft">')}</p>`;
     paragraph = [];
   };
 
@@ -567,7 +594,9 @@ const INDEX_CSS = `
     .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
     .yt-wrap iframe { width: 100%; height: 100%; border: none; }
     .dl-section-label { font-size: 14px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 8px; margin-bottom: 1rem; margin-top: 1.5rem; }
-    .body-text { font-size: 16px; line-height: 2.25; }
+    /* auto-phrase は文節の切れ目で折り返す。「愛用キッチン道／具」のような
+       語の途中での分断を防ぐ。対応していないブラウザでは何も起きない */
+    .body-text { font-size: 16px; line-height: 2.25; word-break: auto-phrase; }
     .body-text p { margin-bottom: 1.9em; }
     .body-text p:last-child { margin-bottom: 0; }
     .body-text a { color: #1a1a1a; text-decoration: underline; text-underline-offset: 3px; }
@@ -592,7 +621,7 @@ const INDEX_CSS = `
     .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
     .toc-list a { font-size: 13px; color: #1a1a1a; text-decoration: none; }
     .toc-list a:hover { text-decoration: underline; }
-    .memo { background: #f7f7f7; border-radius: 8px; padding: 1.15rem 1.4rem; font-size: 16px; line-height: 1.95; }
+    .memo { background: #f7f7f7; border-radius: 8px; padding: 1.15rem 1.4rem; font-size: 16px; line-height: 1.95; word-break: auto-phrase; }
     .memo p + p { margin-top: 0.9em; }
     .tools-note { background: #f7f7f7; border-radius: 8px; padding: 14px 16px; font-size: 15px; }
     .tools-note a { color: #666; text-decoration: underline; }
@@ -615,6 +644,9 @@ const INDEX_CSS = `
       .detail-title { font-size: 18px; }
       .body-text { font-size: 15px; }
       .memo { font-size: 15px; }
+      /* パソコンの幅に合わせて入れた文中の改行は、狭い画面では
+         中途半端な位置に残ってしまうので畳む。空行の区切りは残る */
+      .body-text br.soft, .memo br.soft { display: none; }
       .tool-embed { flex-direction: column; gap: 0.9rem; }
       .tool-embed-photo { flex: none; }
       .tool-embed-photo img { aspect-ratio: 4/3; }
