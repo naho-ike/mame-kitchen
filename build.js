@@ -419,15 +419,9 @@ function shopButtonsHTML(t) {
     .join('');
 }
 
-// 道具の説明の中でさらに [[...]] を展開すると無限に入れ子になるので、
-// 展開中は目印を立てて、その間は文字として扱う
-let expandingEmbed = false;
-
+// 記事に差し込むカードは、写真と商品名だけの簡潔な形にする。
+// 説明は愛用品ページで読めるので、本文の流れを止めないようにした
 function toolEmbedHTML(t) {
-  expandingEmbed = true;
-  const desc = t.note ? textToHtml(t.note, `${t.id}-embed-`).html : '';
-  expandingEmbed = false;
-
   const shops = shopButtonsHTML(t);
   const photo = t.img
     ? `<div class="tool-embed-photo"><img src="${safeHtml(t.img)}" alt="${safeHtml(t.name)}" loading="lazy"></div>`
@@ -435,7 +429,6 @@ function toolEmbedHTML(t) {
   return `<div class="tool-embed">${photo}<div class="tool-embed-body">`
     + (t.size ? `<div class="tool-size">${safeHtml(t.size)}</div>` : '')
     + `<div class="tool-embed-title">${safeHtml(t.name)}</div>`
-    + (desc ? `<div class="tool-embed-desc">${desc}</div>` : '')
     + (shops ? `<div class="tool-shops">${shops}</div>` : '')
     + `</div></div>`;
 }
@@ -458,7 +451,6 @@ function findTool(name) {
 
 // [[道具名]] だけの行なら、その道具のカードを返す。見つからなければ null
 function embedFromLine(line) {
-  if (expandingEmbed) return null;
   const m = line.trim().match(/^\[\[(.+?)\]\]$/);
   if (!m) return null;
   const t = findTool(m[1]);
@@ -535,10 +527,9 @@ const INDEX_CSS = `
     .tool-embed { display: flex; gap: 1.1rem; background: #f7f7f7; border-radius: 8px; padding: 1.1rem 1.25rem; margin: 1.9em 0; }
     .tool-embed-photo { flex: 0 0 150px; }
     .tool-embed-photo img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; display: block; }
-    .tool-embed-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    .tool-embed-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
     .tool-embed-title { font-size: 16px; font-weight: 500; line-height: 1.55; }
-    .tool-embed-desc { font-size: 14px; line-height: 1.85; color: #555; }
-    .tool-embed-desc p + p { margin-top: 0.5em; }
+    .tool-embed-body .tool-shops { margin-top: 0; padding-top: 0; }
     .body-heading { font-size: 19px; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
     .toc-box { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
     .toc-title { font-size: 12px; color: #999; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
