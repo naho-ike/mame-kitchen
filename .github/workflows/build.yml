@@ -32,9 +32,25 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add index.html
+
           # 道具の登録が0件のときは tools.html と images が作られないので、あるときだけ追加する
-          if [ -f tools.html ]; then git add tools.html; fi
-          if [ -d images ]; then git add images; fi
-          git diff --staged --quiet || git commit -m "Update blog"
+          stage() {
+            git add index.html
+            if [ -f tools.html ]; then git add tools.html; fi
+            if [ -d images ]; then git add images; fi
+          }
+
+          stage
+          if git diff --staged --quiet; then echo "変更はありません"; exit 0; fi
+          git commit -m "Update blog"
+          if git push; then exit 0; fi
+
+          # ビルドが同時に走ると、後から終わった方が押せずに失敗する。
+          # 生成物はNotionから作り直したものなので、取り込んだうえで押し直す
+          echo "別のビルドが先に反映していたため、取り込んでから押し直します"
+          git fetch origin main
+          git reset --soft origin/main
+          stage
+          if git diff --staged --quiet; then echo "変更はありません"; exit 0; fi
+          git commit -m "Update blog"
           git push
