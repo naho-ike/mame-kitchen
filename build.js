@@ -21,6 +21,10 @@ const TOOL_CATEGORIES = [
   { name: '暮らしの道具', en: '– Living –' },
 ];
 
+// ステマ規制（景品表示法）で必要な広告の表示。愛用品ページと、
+// 広告リンクを含む記事の両方で同じ文言を使う
+const AD_NOTICE = '※ 本ページのリンクにはアフィリエイト広告を含みます。';
+
 function notionRequest(path, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
@@ -591,6 +595,8 @@ const INDEX_CSS = `
     .detail-cat { font-size: 12px; color: #999; letter-spacing: 0.05em; }
     .detail-title { font-size: 22px; font-weight: 500; margin-top: 6px; line-height: 1.5; font-variant-emoji: text; }
     .detail-date { font-size: 12px; color: #bbb; margin-top: 8px; }
+    /* 広告リンクを含む記事にだけ出る表示。本文を読みはじめる前に目に入る位置に置く */
+    .pr-note { display: inline-block; font-size: 11px; line-height: 1.6; color: #999; background: #f7f7f7; border-radius: 6px; padding: 7px 12px; margin: 1.25rem 0 0; }
     .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
     .yt-wrap iframe { width: 100%; height: 100%; border: none; }
     .dl-section-label { font-size: 14px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 8px; margin-bottom: 1rem; margin-top: 1.5rem; }
@@ -892,7 +898,8 @@ async function main() {
       }
     }
     const menuHtml = menuItems.map(({ name, desc, url }) => {
-      const link = url ? `<a class="menu-link" href="${safeHtml(url)}" target="_blank">参考レシピを見る →</a>` : '';
+      // 献立の参考リンクに買い物先を入れることもあるので、広告リンクなら印を付ける
+      const link = url ? `<a class="menu-link" href="${safeHtml(url)}" ${linkAttrs(url)}>参考レシピを見る →</a>` : '';
       return `<div class="menu-item">
         <span class="menu-name">${safeHtml(name)}</span>
         ${desc ? `<span class="menu-desc">${safeHtml(desc)}</span>` : ''}
@@ -906,19 +913,37 @@ async function main() {
       <div class="tools-note"><a href="tools.html">愛用しているものは、愛用品のページにまとめています →</a></div>`
       : '';
 
+    const bodySection = (p.body?.html || p.point) ? (() => {
+      // ページ本文が書かれていればそちらを優先する
+      const { html, toc } = p.body?.html ? p.body : textToHtml(p.point, `${p.id}-`);
+      const tocHtml = toc ? `<div class="toc-box"><div class="toc-title">目次</div><ul class="toc-list">${toc}</ul></div>` : '';
+      return `<div class="dl-section-label">このごはんについて</div>${tocHtml}<div class="body-text">${html}</div>`;
+    })() : '';
+
+    const menuSection = menuHtml
+      ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>`
+      : '';
+
+    const memoSection = p.memo
+      ? `<div class="dl-section-label">最後に</div><div class="memo">${textToHtml(p.memo, `${p.id}-memo-`).html}</div>`
+      : '';
+
+    // ステマ規制（景品表示法）への対応。広告リンクや道具カードが入っている記事にだけ、
+    // 読みはじめる前に目に入るところへ出す。入っていない記事には出さない
+    const contents = bodySection + menuSection + memoSection;
+    const hasAd = contents.includes('class="tool-embed"')
+      || contents.includes('rel="nofollow sponsored noopener"');
+    const prNote = hasAd ? `<p class="pr-note">${AD_NOTICE}</p>` : '';
+
     return `<div class="detail-inner" data-id="${p.id}" style="display:none">
       <div class="detail-cat">${safeHtml(p.cat)}</div>
       <div class="detail-title">${safeHtml(p.title)}</div>
       <div class="detail-date">${safeHtml(p.date)}</div>
+      ${prNote}
       ${ytHtml}
-      ${(p.body?.html || p.point) ? (() => {
-        // ページ本文が書かれていればそちらを優先する
-        const { html, toc } = p.body?.html ? p.body : textToHtml(p.point, `${p.id}-`);
-        const tocHtml = toc ? `<div class="toc-box"><div class="toc-title">目次</div><ul class="toc-list">${toc}</ul></div>` : '';
-        return `<div class="dl-section-label">このごはんについて</div>${tocHtml}<div class="body-text">${html}</div>`;
-      })() : ''}
-      ${menuHtml ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>` : ''}
-      ${p.memo ? `<div class="dl-section-label">最後に</div><div class="memo">${textToHtml(p.memo, `${p.id}-memo-`).html}</div>` : ''}
+      ${bodySection}
+      ${menuSection}
+      ${memoSection}
       ${toolsLink}
     </div>`;
   }
@@ -1101,7 +1126,7 @@ ${SITE_DESC}
     <p>毎日使っていて、心地がいいなと思うものをまとめています。</p>
     <p>動画でよく聞かれるものも、こちらに置いています。</p>
   </div>
-  <p class="pr-note">※ 本ページのリンクにはアフィリエイト広告を含みます。</p>
+  <p class="pr-note">${AD_NOTICE}</p>
   <hr class="section-divider">
 ${toolsSections}
 </div>
