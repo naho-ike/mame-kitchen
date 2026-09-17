@@ -406,6 +406,14 @@ function toolKey(name) {
   return (name || '').replace(/[\s\u3000]/g, '').toLowerCase();
 }
 
+// 「杉せいろ 18cm（かごや）」のようにメーカー名をカッコで添える書き方があるため、
+// カッコを外した形でも引けるようにする。記事側が「かごや 杉せいろ 18cm」でも当たる
+function toolKeys(name) {
+  const full = toolKey(name);
+  const bare = toolKey((name || '').replace(/[（(【\[][^）)】\]]*[）)】\]]/g, ''));
+  return bare && bare !== full ? [full, bare] : [full];
+}
+
 function shopButtonsHTML(t) {
   // リンクは「もしもアフィリエイト」で取得したものを入れる想定。
   // 未入力のショップはボタンごと出さない
@@ -440,11 +448,13 @@ function findTool(name) {
   const exact = toolByName.get(key);
   if (exact) return exact;
 
+  // 1つの道具が複数のキーを持つので、当たった道具の重複を取り除いてから数える
   const hits = [...toolByName].filter(([k]) => k.includes(key) || key.includes(k));
-  if (hits.length === 1) return hits[0][1];
-  if (hits.length > 1) {
+  const uniq = [...new Set(hits.map(([, t]) => t))];
+  if (uniq.length === 1) return uniq[0];
+  if (uniq.length > 1) {
     console.error(`「${name}」に当てはまる愛用品が複数あります: `
-      + hits.map(([, t]) => t.name).join(' / '));
+      + uniq.map(t => t.name).join(' / '));
   }
   return null;
 }
@@ -456,7 +466,7 @@ function embedFromLine(line) {
   const t = findTool(m[1]);
   if (!t) {
     console.error(`愛用品に「${m[1]}」が見つかりません。登録されている道具名: `
-      + [...toolByName.values()].map(x => x.name).join(' / '));
+      + [...new Set(toolByName.values())].map(x => x.name).join(' / '));
     return null;
   }
   return toolEmbedHTML(t);
@@ -771,7 +781,7 @@ async function main() {
   }
 
   // 本文の [[道具名]] を引けるようにしてから、ページ本文を組み立てる
-  for (const t of tools) toolByName.set(toolKey(t.name), t);
+  for (const t of tools) for (const k of toolKeys(t.name)) toolByName.set(k, t);
   for (const post of posts) {
     if (post.blocks) post.body = blocksToHtml(post.blocks, `${post.id}-`);
   }
