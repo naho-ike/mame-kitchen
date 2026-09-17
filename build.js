@@ -252,6 +252,20 @@ function richTextToHtml(richText) {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 
+// 1つの段落の中で Shift+Enter で改行している場合に備えて、装飾を保ったまま行ごとに分ける。
+// Notionでは改行が plain_text の中の \n になることも、段落の切れ目になることもある
+function splitRichTextLines(richText) {
+  const lines = [[]];
+  for (const r of richText || []) {
+    const parts = (r.plain_text || '').split('\n');
+    parts.forEach((p, i) => {
+      if (i > 0) lines.push([]);
+      if (p) lines[lines.length - 1].push({ ...r, plain_text: p });
+    });
+  }
+  return lines;
+}
+
 function blocksToHtml(blocks, idPrefix) {
   let html = '';
   let toc = '';
@@ -270,6 +284,10 @@ function blocksToHtml(blocks, idPrefix) {
     const t = b.type;
 
     if (t === 'bulleted_list_item' || t === 'numbered_list_item') {
+      // 箇条書きの項目が [[道具名]] だけのときも、カードとして差し込む
+      const itemEmbed = embedFromLine(plainOf(b[t].rich_text));
+      if (itemEmbed) { closeList(); html += itemEmbed; continue; }
+
       openList(t === 'bulleted_list_item' ? 'ul' : 'ol');
       html += `<li>${richTextToHtml(b[t].rich_text)}</li>`;
       continue;
@@ -278,21 +296,48 @@ function blocksToHtml(blocks, idPrefix) {
 
     if (t === 'paragraph') {
       const plain = plainOf(b.paragraph.rich_text);
-      const embed = embedFromLine(plain);
-      if (embed) { html += embed; continue; }
 
-      // テキスト欄から貼り付けたときのために、##見出し## も見出しとして扱う
-      const pasted = plain.trim().match(/^##(.+?)##$/);
-      if (pasted) {
-        headingIndex++;
-        const anchorId = `${idPrefix}heading-${headingIndex}`;
-        html += `<h3 class="body-heading" id="${anchorId}">${safeHtml(pasted[1])}</h3>`;
-        toc += `<li><a href="#${anchorId}">${safeHtml(pasted[1])}</a></li>`;
+      // [[道具名]] や ##見出し## は、段落の途中の行に書かれていることもある。
+      // 1行でも該当すれば行ごとに組み立て、なければ今までどおり段落ごと流し込む
+      const lines = /(^|\n)\s*(\[\[.+?\]\]|##.+?##)\s*(\n|$)/.test(plain)
+        ? splitRichTextLines(b.paragraph.rich_text)
+        : null;
+
+      if (!lines) {
+        const inner = richTextToHtml(b.paragraph.rich_text);
+        if (inner) html += `<p>${inner}</p>`; // 空段落は余白になるだけなので出さない
         continue;
       }
 
-      const inner = richTextToHtml(b.paragraph.rich_text);
-      if (inner) html += `<p>${inner}</p>`; // 空段落は余白になるだけなので出さない
+      let buf = [];
+      const flushLines = () => {
+        // 差し込みの前後にできた空行は、そのままだと余分な改行になるので落とす
+        while (buf.length && !buf[0]) buf.shift();
+        while (buf.length && !buf[buf.length - 1]) buf.pop();
+        if (buf.length) html += `<p>${buf.join('<br>')}</p>`;
+        buf = [];
+      };
+
+      for (const line of lines) {
+        const text = plainOf(line).trim();
+
+        const embed = embedFromLine(text);
+        if (embed) { flushLines(); html += embed; continue; }
+
+        // テキスト欄から貼り付けたときのために、##見出し## も見出しとして扱う
+        const pasted = text.match(/^##(.+?)##$/);
+        if (pasted) {
+          flushLines();
+          headingIndex++;
+          const anchorId = `${idPrefix}heading-${headingIndex}`;
+          html += `<h3 class="body-heading" id="${anchorId}">${safeHtml(pasted[1])}</h3>`;
+          toc += `<li><a href="#${anchorId}">${safeHtml(pasted[1])}</a></li>`;
+          continue;
+        }
+
+        buf.push(richTextToHtml(line));
+      }
+      flushLines();
     } else if (t === 'heading_1' || t === 'heading_2' || t === 'heading_3') {
       headingIndex++;
       const anchorId = `${idPrefix}heading-${headingIndex}`;
@@ -403,7 +448,8 @@ const toolByName = new Map();
 
 // 表記ゆれを吸収する（空白・全角空白・大文字小文字）
 function toolKey(name) {
-  return (name || '').replace(/[\s\u3000]/g, '').toLowerCase();
+  // NFKC \u3067\u300c18\u339d\u300d\u3092\u300c18cm\u300d\u306b\u3001\u5168\u89d2\u306e\u82f1\u6570\u5b57\u3092\u534a\u89d2\u306b\u305d\u308d\u3048\u308b
+  return (name || '').normalize('NFKC').replace(/[\s\u3000]/g, '').toLowerCase();
 }
 
 // 「杉せいろ 18cm（かごや）」のようにメーカー名をカッコで添える書き方があるため、
