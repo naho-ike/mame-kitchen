@@ -448,7 +448,8 @@ const toolByName = new Map();
 
 // 表記ゆれを吸収する（空白・全角空白・大文字小文字）
 function toolKey(name) {
-  return (name || '').replace(/[\s\u3000]/g, '').toLowerCase();
+  // NFKC \u3067\u300c18\u339d\u300d\u3092\u300c18cm\u300d\u306b\u3001\u5168\u89d2\u306e\u82f1\u6570\u5b57\u3092\u534a\u89d2\u306b\u305d\u308d\u3048\u308b
+  return (name || '').normalize('NFKC').replace(/[\s\u3000]/g, '').toLowerCase();
 }
 
 // 「杉せいろ 18cm（かごや）」のようにメーカー名をカッコで添える書き方があるため、
