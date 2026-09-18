@@ -2,7 +2,9 @@ name: Build Blog
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    # 記事の公開予約を時刻どおりに近づけるため15分ごとに見に行く。
+    # 中身が変わったときしかコミットしないので、記録は増えない
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 env:
