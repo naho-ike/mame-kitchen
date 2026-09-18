@@ -724,6 +724,15 @@ const SITE_DESC = `    <div class="site-desc">
 
 // ---------------------------------------------------------------
 
+// 公開日が来ているかどうか。「2026-09-19」のように日付だけのときは
+// 日本時間のその日の0時、時刻まで入れてあるときはその時刻に公開する。
+// 空欄なら止めない（日付を入れ忘れた記事を消してしまわないため）
+function isPublished(start, now = Date.now()) {
+  if (!start) return true;
+  const ms = Date.parse(start.length <= 10 ? `${start}T00:00:00+09:00` : start);
+  return Number.isNaN(ms) || ms <= now;
+}
+
 async function main() {
   const result = await notionRequest(`databases/${DB_ID}/query`, {
     filter: { property: '公開', checkbox: { equals: true } },
@@ -738,13 +747,20 @@ async function main() {
       title: richTextToPlain(p['タイトル']?.title),
       cat: p['カテゴリー']?.select?.name || '',
       date: (p['公開日']?.date?.start || '').replace(/-/g, '.'),
+      publishAt: p['公開日']?.date?.start || '',
       youtubeUrl: p['YouTube URL']?.url || '',
       point: richTextToPlain(p['動画について']?.rich_text),
       memo: richTextToPlain(p['ひとこと']?.rich_text),
       menu: richTextToPlain(p['献立メモ']?.rich_text),
       pickup: p['ピックアップ']?.checkbox || false,
     };
-  });
+  })
+    // 公開日がまだ来ていない記事は出さない。動画の公開に合わせて予約できる
+    .filter(post => {
+      if (isPublished(post.publishAt)) return true;
+      console.log(`公開日がまだ来ていないので出しません: ${post.title}（${post.publishAt}）`);
+      return false;
+    });
 
   console.log(`Fetched ${posts.length} posts`);
 
