@@ -25,6 +25,10 @@ const TOOL_CATEGORIES = [
 // サイトの説明（全ページ）と、広告リンクを含む記事の両方で同じ文言を使う
 const AD_NOTICE = 'このサイトはアフィリエイト広告（Amazonアソシエイト含む）を掲載しています。';
 
+// 本文のいちばん上に出る見出し。Notionの「本文の見出し」が空の記事はこれになる。
+// 料理以外の記事では、記事ごとに書き換えられる
+const LEAD_LABEL = 'このごはんについて';
+
 function notionRequest(path, body) {
   return new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
@@ -750,6 +754,7 @@ async function main() {
       publishAt: p['公開日']?.date?.start || '',
       youtubeUrl: p['YouTube URL']?.url || '',
       point: richTextToPlain(p['動画について']?.rich_text),
+      lead: richTextToPlain(p['本文の見出し']?.rich_text).trim(),
       memo: richTextToPlain(p['ひとこと']?.rich_text),
       menu: richTextToPlain(p['献立メモ']?.rich_text),
       pickup: p['ピックアップ']?.checkbox || false,
@@ -934,7 +939,7 @@ async function main() {
       // ページ本文が書かれていればそちらを優先する
       const { html, toc } = p.body?.html ? p.body : textToHtml(p.point, `${p.id}-`);
       const tocHtml = toc ? `<div class="toc-box"><div class="toc-title">目次</div><ul class="toc-list">${toc}</ul></div>` : '';
-      return `<div class="dl-section-label">このごはんについて</div>${tocHtml}<div class="body-text">${html}</div>`;
+      return `<div class="dl-section-label">${safeHtml(p.lead || LEAD_LABEL)}</div>${tocHtml}<div class="body-text">${html}</div>`;
     })() : '';
 
     const menuSection = menuHtml
