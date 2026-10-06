@@ -175,10 +175,14 @@ function richTextToPlain(richText) {
     .replace(/﻿/g, '');
 }
 
-function getYoutubeId(url) {
+// YouTubeのURLから動画のidを取り出す。ショート（/shorts/）も読む。
+// ショートは縦長なので、横長の動画と枠の形を変える必要があり、種類も返す
+function getYoutube(url) {
   if (!url) return null;
+  const short = url.match(/youtube\.com\/shorts\/([^&?/]+)/);
+  if (short) return { id: short[1], vertical: true };
   const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
-  return m ? m[1] : null;
+  return m ? { id: m[1], vertical: false } : null;
 }
 
 // ---------------------------------------------------------------
@@ -602,6 +606,8 @@ const INDEX_CSS = `
     /* 広告の表示。サイトの説明の下に置いて、どのページでも目に入るようにする */
     .pr-note { display: inline-block; font-size: 11px; line-height: 1.6; color: #999; background: #f7f7f7; border-radius: 6px; padding: 7px 12px; margin: 1.25rem 0 0; }
     .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
+    /* ショートは縦長。横幅いっぱいにすると画面からあふれるので幅を抑えて左寄せにする */
+    .yt-short { aspect-ratio: 9/16; width: min(100%, 340px); }
     .yt-wrap iframe { width: 100%; height: 100%; border: none; }
     .dl-section-label { font-size: 14px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 8px; margin-bottom: 1rem; margin-top: 1.5rem; }
     /* auto-phrase は文節の切れ目で折り返す。「愛用キッチン道／具」のような
@@ -895,17 +901,22 @@ async function main() {
   // ---- index.html ----
 
   function cardHTML(p) {
-    const ytId = getYoutubeId(p.youtubeUrl);
-    const img = ytId
-      ? `<img src="https://img.youtube.com/vi/${ytId}/mqdefault.jpg" alt="${safeHtml(p.title)}">`
+    const yt = getYoutube(p.youtubeUrl);
+    // ショートのサムネイルは縦長。mqdefault だと左右に黒帯が入るので、
+    // 縦のまま返ってくる maxresdefault を先に試し、無ければ mqdefault に戻す
+    const img = yt
+      ? `<img src="https://img.youtube.com/vi/${yt.id}/${yt.vertical ? 'maxresdefault' : 'mqdefault'}.jpg"`
+        + ` alt="${safeHtml(p.title)}"`
+        + (yt.vertical ? ` onerror="this.onerror=null;this.src='https://img.youtube.com/vi/${yt.id}/mqdefault.jpg'"` : '')
+        + `>`
       : `<div class="no-img">サムネイルなし</div>`;
     return `<div class="card" data-id="${p.id}"><div class="card-img">${img}</div><div class="card-cat">${safeHtml(p.cat)}</div><div class="card-title">${safeHtml(p.title)}</div><div class="card-date">${safeHtml(p.date)}</div></div>`;
   }
 
   function detailHTML(p) {
-    const ytId = getYoutubeId(p.youtubeUrl);
-    const ytHtml = ytId
-      ? `<div class="yt-wrap"><iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe></div>`
+    const yt = getYoutube(p.youtubeUrl);
+    const ytHtml = yt
+      ? `<div class="yt-wrap${yt.vertical ? ' yt-short' : ''}"><iframe src="https://www.youtube.com/embed/${yt.id}" allowfullscreen></iframe></div>`
       : '';
 
     const menuLines = p.menu ? p.menu.split('\n').filter(Boolean) : [];
