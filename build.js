@@ -150,6 +150,16 @@ function firstFileUrl(prop) {
   return f.type === 'external' ? (f.external?.url || '') : (f.file?.url || '');
 }
 
+// リンク先として安全なURLだけ通す。javascript: や data: を書かれても
+// リンクにしないための歯止め（Notionに貼り間違えたときの保険も兼ねる）
+function safeUrl(url, where = 'リンク') {
+  if (!url) return '';
+  const u = String(url).trim();
+  if (/^(https?:\/\/|mailto:|\/|#)/i.test(u)) return u;
+  console.error(`${where}に使えないURLが入っていたので、リンクにしませんでした: ${u.slice(0, 60)}`);
+  return '';
+}
+
 function safeHtml(str) {
   if (!str) return '';
   return str
@@ -176,13 +186,22 @@ function richTextToPlain(richText) {
 }
 
 // YouTubeのURLから動画のidを取り出す。ショート（/shorts/）も読む。
-// ショートは縦長なので、横長の動画と枠の形を変える必要があり、種類も返す
+// ショートは縦長なので、横長の動画と枠の形を変える必要があり、種類も返す。
+// idは英数字と - _ だけなので、それ以外が混ざったURLは受け付けない
+// （URLを貼り間違えたときに、ページのHTMLが壊れないようにするため）
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{6,20}$/;
+
 function getYoutube(url) {
   if (!url) return null;
   const short = url.match(/youtube\.com\/shorts\/([^&?/]+)/);
-  if (short) return { id: short[1], vertical: true };
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
-  return m ? { id: m[1], vertical: false } : null;
+  const long = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
+  const m = short || long;
+  if (!m) return null;
+  if (!YOUTUBE_ID.test(m[1])) {
+    console.error(`YouTube URL から動画を読み取れませんでした: ${String(url).slice(0, 60)}`);
+    return null;
+  }
+  return { id: m[1], vertical: Boolean(short) };
 }
 
 // ---------------------------------------------------------------
@@ -283,7 +302,10 @@ function richTextToHtml(richText) {
     if (a.strikethrough) t = `<s>${t}</s>`;
     if (a.italic) t = `<em>${t}</em>`;
     if (a.bold) t = `<strong>${t}</strong>`;
-    if (r.href) t = `<a href="${safeHtml(r.href)}" ${linkAttrs(r.href)}>${t}</a>`;
+    if (r.href) {
+      const href = safeUrl(r.href, '本文のリンク');
+      if (href) t = `<a href="${safeHtml(href)}" ${linkAttrs(href)}>${t}</a>`;
+    }
     return t;
   }).join('')
     // テキスト欄から貼り付けたときのために、**強調** も太字として扱う
