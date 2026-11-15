@@ -45,7 +45,22 @@ function postSlug(p) {
     warnedSlugs.add(p.id);
     console.error(`「URL名」は英小文字・数字・ハイフンだけで書いてください。既定のURLを使います: ${p.title}（${custom}）`);
   }
-  return p.id.slice(0, 12);
+  // NotionのページIDは、先頭が作った時期で決まるため近い時期の記事どうしで似通う。
+  // ランダムに決まる末尾を使う。万一ほかの記事と重なったら、IDをまるごと使う
+  const short = p.id.slice(-12);
+  return slugOwners.get(short) && slugOwners.get(short) !== p.id ? p.id : short;
+}
+
+// 末尾12文字が重なる記事がないかを、記事ページを書き出す前に調べておく
+const slugOwners = new Map();
+function reserveSlugs(posts) {
+  const seen = new Map();
+  for (const p of posts) {
+    const short = p.id.slice(-12);
+    seen.set(short, seen.has(short) ? null : p.id);
+  }
+  slugOwners.clear();
+  for (const [k, v] of seen) if (v) slugOwners.set(k, v); else slugOwners.set(k, '#dup');
 }
 
 function postPath(p) {
@@ -1106,6 +1121,7 @@ async function main() {
     };
   }
 
+  reserveSlugs(posts);
   const articles = posts.map(p => ({ post: p, ...detailHTML(p) }));
 
   // ---- 記事ごとのページ ----
