@@ -859,7 +859,7 @@ const GA_TAG = `  <!-- Google tag (gtag.js) -->
 // { path, desc, image, type } を渡すと、そのページのものを出す
 function pageHead(title, css, meta = {}) {
   const url = `${SITE_URL}${meta.path || '/'}`;
-  const desc = meta.desc || '毎日の暮らしの中で、ごはんを作って、食べる記録です。';
+  const desc = meta.desc || 'せいろごはんを中心に、毎日の暮らしの中で「作って、食べる」記録をまとめています。疲れた日も、がんばりすぎず、ちゃんと食べるための工夫や愛用品のこと。';
   const image = !meta.image ? '' : /^https?:\/\//.test(meta.image) ? meta.image : `${SITE_URL}${asset(meta.image)}`;
   return `<!DOCTYPE html>
 <html lang="ja">
@@ -888,10 +888,9 @@ ${GA_TAG}
 }
 
 const SITE_DESC = `    <div class="site-desc">
-      毎日の暮らしの中で、 ごはんを作って、食べる記録です。<br>
-      YouTubeで紹介しているレシピや工夫を、 少しだけ丁寧にまとめています。<br>
-      がんばりすぎず、ちゃんと食べることを大切に。
-      <div class="profile">管理栄養士。 夫と0歳の息子と暮らしています。</div>
+      せいろごはんを中心に、毎日の暮らしの中で「作って、食べる」記録をまとめています。<br>
+      疲れた日も、がんばりすぎず、ちゃんと食べるための工夫や愛用品のこと。
+      <div class="profile">管理栄養士。夫と小さな息子と暮らしています。</div>
     </div>
     <p class="pr-note">${AD_NOTICE}</p>`;
 
