@@ -89,6 +89,10 @@
     .tool-embed-title { font-size: 16px; font-weight: 500; line-height: 1.55; }
     .tool-embed-body .tool-shops { margin-top: 0; padding-top: 0; }
     .body-heading { font-size: 19px; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
+    /* 本文の見出しの上に区切り線を引いて、話の切れ目を分かりやすくする。
+       本文のいちばん最初の見出しは、すぐ上に「このごはんについて」の線があるので引かない */
+    .body-text .body-heading { border-top: 1px solid #e0e0e0; padding-top: 2rem; margin-top: 2.5rem; }
+    .body-text .body-heading:first-child { border-top: none; padding-top: 0; margin-top: 0.5rem; }
     .toc-box { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
     .toc-title { font-size: 12px; color: #999; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
     .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
