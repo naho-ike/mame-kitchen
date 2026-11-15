@@ -25,6 +25,51 @@ const TOOL_CATEGORIES = [
 // サイトの説明（全ページ）と、広告リンクを含む記事の両方で同じ文言を使う
 const AD_NOTICE = 'このサイトはアフィリエイト広告（Amazonアソシエイト含む）を掲載しています。';
 
+// SNSに貼ったときのリンクプレビューや、記事ごとのURLに使う
+const SITE_URL = 'https://mamegurashi.com';
+const SITE_NAME = 'mameの穏やかなキッチン';
+
+// サイトの中のファイルは、どの階層のページから参照しても届くように / から書く。
+// 記事ページは /posts/xxx/ にあるので、相対パスだと画像にたどり着けない
+function asset(p) {
+  return p ? `/${String(p).replace(/^\/+/, '')}` : '';
+}
+
+// 記事ごとのURL。Notionの「URL名」があればそれを使い、
+// 無ければページのidから作る。あとから変えると前のURLが開けなくなる
+const warnedSlugs = new Set();
+function postSlug(p) {
+  const custom = (p.slug || '').trim().toLowerCase();
+  if (/^[a-z0-9][a-z0-9-]{0,60}$/.test(custom)) return custom;
+  if (custom && !warnedSlugs.has(p.id)) {
+    warnedSlugs.add(p.id);
+    console.error(`「URL名」は英小文字・数字・ハイフンだけで書いてください。既定のURLを使います: ${p.title}（${custom}）`);
+  }
+  return p.id.slice(0, 12);
+}
+
+function postPath(p) {
+  return `/posts/${postSlug(p)}/`;
+}
+
+// 本文のHTMLから、リンクプレビューに出す説明文を作る。見出しや道具カード、
+// ボタンの文字が混ざらないよう、段落（<p>）の文章だけを使う
+function leadText(html, limit = 110) {
+  const paras = [...String(html || '').matchAll(/<p>([\s\S]*?)<\/p>/g)].map(m => m[1]);
+  return excerpt(paras.join(' '), limit);
+}
+
+// HTMLの文字を取り除いて、短くする
+function excerpt(html, limit = 110) {
+  const text = String(html || '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text.length > limit ? `${text.slice(0, limit)}…` : text;
+}
+
 // 本文のいちばん上に出る見出し。Notionの「本文の見出し」が空の記事はこれになる。
 // 料理以外の記事では、記事ごとに書き換えられる
 const LEAD_LABEL = 'このごはんについて';
@@ -408,7 +453,7 @@ function blocksToHtml(blocks, idPrefix) {
       if (!b.localSrc) continue; // 取得に失敗した画像は出さない
       const caption = richTextToHtml(b.image.caption);
       const alt = safeHtml(plainOf(b.image.caption));
-      html += `<figure class="body-figure"><img src="${safeHtml(b.localSrc)}" alt="${alt}" loading="lazy">`
+      html += `<figure class="body-figure"><img src="${safeHtml(asset(b.localSrc))}" alt="${alt}" loading="lazy">`
         + (caption ? `<figcaption>${caption}</figcaption>` : '')
         + `</figure>`;
     } else if (t === 'quote') {
@@ -530,7 +575,7 @@ function shopButtonsHTML(t) {
     ['Yahoo!', t.yahoo],
   ]
     .filter(([, url]) => url)
-    .map(([label, url]) => `<a class="shop-btn" href="${safeHtml(url)}" ${linkAttrs(url)}>${label}</a>`)
+    .map(([label, url]) => `<a class="shop-btn" href="${safeHtml(url)}" data-shop="${label}" data-tool="${safeHtml(t.name)}" ${linkAttrs(url)}>${label}</a>`)
     .join('');
 }
 
@@ -539,7 +584,7 @@ function shopButtonsHTML(t) {
 function toolEmbedHTML(t) {
   const shops = shopButtonsHTML(t);
   const photo = t.img
-    ? `<div class="tool-embed-photo"><img src="${safeHtml(t.img)}" alt="${safeHtml(t.name)}" loading="lazy"></div>`
+    ? `<div class="tool-embed-photo"><img src="${safeHtml(asset(t.img))}" alt="${safeHtml(t.name)}" loading="lazy"></div>`
     : '';
   return `<div class="tool-embed">${photo}<div class="tool-embed-body">`
     + (t.size ? `<div class="tool-size">${safeHtml(t.size)}</div>` : '')
@@ -611,7 +656,7 @@ const BASE_CSS = `
 const INDEX_CSS = `
     .scroll-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 0.5rem; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2rem; }
-    .card { cursor: pointer; }
+    .card { cursor: pointer; display: block; color: inherit; text-decoration: none; }
     .card-img { width: 100%; aspect-ratio: 16/10; background: #f3f3f3; border-radius: 8px; overflow: hidden; }
     .card-img img { width: 100%; height: 100%; object-fit: cover; }
     .card-img .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #bbb; }
@@ -621,7 +666,7 @@ const INDEX_CSS = `
     .no-results { font-size: 16px; color: #999; padding: 2rem 0; }
     .detail { display: none; }
     .detail.open { display: block; }
-    .back-btn { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 6px; }
+    .back-btn { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
     .detail-cat { font-size: 12px; color: #999; letter-spacing: 0.05em; }
     .detail-title { font-size: 22px; font-weight: 500; margin-top: 6px; line-height: 1.5; font-variant-emoji: text; }
     .detail-date { font-size: 12px; color: #bbb; margin-top: 8px; }
@@ -718,6 +763,41 @@ const TOOLS_CSS = `
     }
 `;
 
+// 商品リンクのクリックを、Googleアナリティクスに「どの記事の・どの商品の・どこから」で送る。
+// 記事ページ・愛用品ページの両方の末尾に置く。ボタンごとに書かず、ページ全体で拾う
+const CLICK_TRACKING = `<script>
+document.addEventListener('click', function (e) {
+  var a = e.target.closest && e.target.closest('a[rel~="sponsored"]');
+  if (!a || typeof gtag !== 'function') return;
+
+  var place = a.closest('.tool-embed') ? 'article_card'
+    : a.closest('.tool-card') ? 'tools_page'
+    : a.closest('.menu-list') ? 'menu'
+    : a.closest('.body-text') ? 'article_text'
+    : 'other';
+  var host = '';
+  try { host = new URL(a.href).hostname; } catch (err) {}
+
+  gtag('event', 'affiliate_click', {
+    shop: a.dataset.shop || host,
+    tool: a.dataset.tool || (a.textContent || '').trim().slice(0, 60),
+    place: place,
+    page_path: location.pathname,
+    transport_type: 'beacon'
+  });
+}, true);
+</script>`;
+
+// 公開をやめた記事のページが残らないよう、いま公開中のもの以外を消す
+function cleanPostPages(keep) {
+  if (!fs.existsSync('posts')) return;
+  for (const name of fs.readdirSync('posts')) {
+    if (keep.has(name)) continue;
+    fs.rmSync(path.join('posts', name), { recursive: true, force: true });
+    console.log(`公開していない記事のページを削除しました: posts/${name}`);
+  }
+}
+
 const GA_TAG = `  <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-8MM6439TZJ"></script>
 <script>
@@ -728,7 +808,12 @@ const GA_TAG = `  <!-- Google tag (gtag.js) -->
   gtag('config', 'G-8MM6439TZJ');
 </script>`;
 
-function pageHead(title, css) {
+// meta は、SNSに貼ったときのプレビューと検索結果の見え方を決める。
+// { path, desc, image, type } を渡すと、そのページのものを出す
+function pageHead(title, css, meta = {}) {
+  const url = `${SITE_URL}${meta.path || '/'}`;
+  const desc = meta.desc || '毎日の暮らしの中で、ごはんを作って、食べる記録です。';
+  const image = !meta.image ? '' : /^https?:\/\//.test(meta.image) ? meta.image : `${SITE_URL}${asset(meta.image)}`;
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -739,6 +824,15 @@ function pageHead(title, css) {
   <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>${title}</title>
+  <meta name="description" content="${safeHtml(desc)}">
+  <link rel="canonical" href="${safeHtml(url)}">
+  <meta property="og:type" content="${meta.type || 'website'}">
+  <meta property="og:site_name" content="${safeHtml(SITE_NAME)}">
+  <meta property="og:title" content="${title}">
+  <meta property="og:description" content="${safeHtml(desc)}">
+  <meta property="og:url" content="${safeHtml(url)}">${image ? `
+  <meta property="og:image" content="${safeHtml(image)}">` : ''}
+  <meta name="twitter:card" content="${image ? 'summary_large_image' : 'summary'}">
   <style>${BASE_CSS}${css}
   </style>
 ${GA_TAG}
@@ -783,6 +877,7 @@ async function main() {
       youtubeUrl: p['YouTube URL']?.url || '',
       point: richTextToPlain(p['動画について']?.rich_text),
       lead: richTextToPlain(p['本文の見出し']?.rich_text).trim(),
+      slug: richTextToPlain(p['URL名']?.rich_text).trim(),
       memo: richTextToPlain(p['ひとこと']?.rich_text),
       menu: richTextToPlain(p['献立メモ']?.rich_text),
       pickup: p['ピックアップ']?.checkbox || false,
@@ -917,7 +1012,11 @@ async function main() {
   // 本文の [[道具名]] を引けるようにしてから、ページ本文を組み立てる
   for (const t of tools) for (const k of toolKeys(t.name)) toolByName.set(k, t);
   for (const post of posts) {
-    if (post.blocks) post.body = blocksToHtml(post.blocks, `${post.id}-`);
+    if (post.blocks) {
+      post.body = blocksToHtml(post.blocks, `${post.id}-`);
+      // リンクプレビュー用に、本文に入っている画像の場所を控えておく
+      post.body.images = post.blocks.filter(b => b.type === 'image' && b.localSrc).map(b => b.localSrc);
+    }
   }
 
   // ---- index.html ----
@@ -932,7 +1031,8 @@ async function main() {
         + (yt.vertical ? ` onerror="this.onerror=null;this.src='https://img.youtube.com/vi/${yt.id}/mqdefault.jpg'"` : '')
         + `>`
       : `<div class="no-img">サムネイルなし</div>`;
-    return `<div class="card" data-id="${p.id}"><div class="card-img">${img}</div><div class="card-cat">${safeHtml(p.cat)}</div><div class="card-title">${safeHtml(p.title)}</div><div class="card-date">${safeHtml(p.date)}</div></div>`;
+    // 記事ごとのページへのリンク。SNSから直接その記事に飛べるようにする
+    return `<a class="card" href="${postPath(p)}" data-id="${p.id}"><div class="card-img">${img}</div><div class="card-cat">${safeHtml(p.cat)}</div><div class="card-title">${safeHtml(p.title)}</div><div class="card-date">${safeHtml(p.date)}</div></a>`;
   }
 
   function detailHTML(p) {
@@ -965,7 +1065,7 @@ async function main() {
     // 使った道具は記事ごとに書かず、道具ページへ誘導する
     const toolsLink = tools.length
       ? `<div class="dl-section-label">使ったもの</div>
-      <div class="tools-note"><a href="tools.html">愛用しているものは、愛用品のページにまとめています →</a></div>`
+      <div class="tools-note"><a href="/tools.html">愛用しているものは、愛用品のページにまとめています →</a></div>`
       : '';
 
     const bodySection = (p.body?.html || p.point) ? (() => {
@@ -984,35 +1084,96 @@ async function main() {
       : '';
 
     // 広告の表示はサイトの説明に置いて全ページで出しているので、記事ごとには出さない
-    return `<div class="detail-inner" data-id="${p.id}" style="display:none">
+    const inner = `<article class="detail-inner" data-id="${p.id}">
       <div class="detail-cat">${safeHtml(p.cat)}</div>
-      <div class="detail-title">${safeHtml(p.title)}</div>
+      <h1 class="detail-title">${safeHtml(p.title)}</h1>
       <div class="detail-date">${safeHtml(p.date)}</div>
       ${ytHtml}
       ${bodySection}
       ${menuSection}
       ${memoSection}
       ${toolsLink}
-    </div>`;
+    </article>`;
+
+    // リンクプレビューに出す写真は、本文の1枚目。無ければ動画のサムネイル
+    const firstImage = (p.body?.images || [])[0] || '';
+    return {
+      inner,
+      desc: leadText(bodySection) || leadText(memoSection),
+      image: firstImage,
+      ytThumb: yt ? `https://img.youtube.com/vi/${yt.id}/${yt.vertical ? 'maxresdefault' : 'mqdefault'}.jpg` : '',
+      searchText: excerpt(`${p.title} ${bodySection} ${menuSection} ${memoSection}`, 100000).toLowerCase(),
+    };
   }
+
+  const articles = posts.map(p => ({ post: p, ...detailHTML(p) }));
+
+  // ---- 記事ごとのページ ----
+  // SNSから直接その記事に飛べるように、1記事1ページで書き出す
+  const CATS = ['1週間献立', 'せいろごはん', '暮らし'];
+  const linkNav = active => {
+    const item = (label, href) =>
+      `<a${label === active ? ' class="active"' : ''} href="${href}">${label}</a>`;
+    return [
+      item('すべて', '/'),
+      ...CATS.map(c => item(c, `/?cat=${encodeURIComponent(c)}`)),
+      ...(tools.length ? [item('愛用品', '/tools.html')] : []),
+    ].join('\n        ');
+  };
+
+  const siteHeader = active => `  <div class="site-header">
+    <a class="site-title" href="/">${SITE_NAME}</a>
+${SITE_DESC}
+    <div class="nav-row">
+      <nav class="nav">
+        ${linkNav(active)}
+      </nav>
+    </div>
+  </div>`;
+
+  for (const a of articles) {
+    const p = a.post;
+    const dir = path.join('posts', postSlug(p));
+    fs.mkdirSync(dir, { recursive: true });
+    const html = `${pageHead(`${safeHtml(p.title)}｜${SITE_NAME}`, INDEX_CSS, {
+      path: postPath(p),
+      desc: a.desc,
+      image: a.image || a.ytThumb,
+      type: 'article',
+    })}
+<div class="site">
+${siteHeader(p.cat)}
+  <a class="back-btn" href="/">← 一覧に戻る</a>
+${a.inner}
+</div>
+${CLICK_TRACKING}
+</body>
+</html>`;
+    fs.writeFileSync(path.join(dir, 'index.html'), html);
+  }
+  cleanPostPages(new Set(posts.map(postSlug)));
+  console.log(`Built ${articles.length} post pages under posts/.`);
+
+  // ---- index.html ----
 
   const newCards = posts.slice(0, 3).map(cardHTML).join('');
   const pickupCards = posts.filter(p => p.pickup).map(cardHTML).join('');
   const allCards = posts.map(cardHTML).join('');
-  const allDetails = posts.map(detailHTML).join('');
-  const toolsNavLink = tools.length ? `\n        <a href="tools.html">愛用品</a>` : '';
 
-  const html = `${pageHead('mameの穏やかなキッチン', INDEX_CSS)}
+  // 本文は記事ページへ移したので、検索用の文字だけを持たせる
+  const searchIndex = JSON.stringify(Object.fromEntries(articles.map(a => [a.post.id, a.searchText])));
+
+  const html = `${pageHead(SITE_NAME, INDEX_CSS)}
 <div class="site">
   <div class="site-header">
-    <a class="site-title" href="/" onclick="location.reload(); return false;">mameの穏やかなキッチン</a>
+    <a class="site-title" href="/">${SITE_NAME}</a>
 ${SITE_DESC}
     <div class="nav-row">
       <nav class="nav">
         <a class="active" onclick="filterCat('all',this)">すべて</a>
         <a onclick="filterCat('1週間献立',this)">1週間献立</a>
         <a onclick="filterCat('せいろごはん',this)">せいろごはん</a>
-        <a onclick="filterCat('暮らし',this)">暮らし</a>${toolsNavLink}
+        <a onclick="filterCat('暮らし',this)">暮らし</a>${tools.length ? `\n        <a href="/tools.html">愛用品</a>` : ''}
       </nav>
       <div class="search-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#1a1a1a" stroke-width="1.5">
@@ -1036,30 +1197,14 @@ ${SITE_DESC}
     <div class="grid" id="card-grid">${allCards}</div>
     <div class="no-results" id="no-results" style="display:none">該当する記事が見つかりませんでした。</div>
   </div>
-
-  <div class="detail" id="detail-view">
-    <span class="back-btn" onclick="closeDetail()">← 一覧に戻る</span>
-    <div id="detail-content">${allDetails}</div>
-  </div>
 </div>
 
 <script>
 const cards = document.querySelectorAll('.card');
 let currentCat = 'all', currentQuery = '';
 
-// 記事ごとの検索用テキスト。見出しラベルは全記事に出るので対象に含めない
-var searchText = {};
-document.querySelectorAll('.detail-inner').forEach(function (el) {
-  var parts = ['.detail-title', '.body-text', '.menu-list', '.memo'].map(function (sel) {
-    var n = el.querySelector(sel);
-    return n ? n.textContent : '';
-  });
-  searchText[el.dataset.id] = parts.join(' ').toLowerCase();
-});
-
-cards.forEach(card => {
-  card.addEventListener('click', () => openDetail(card.dataset.id));
-});
+// 記事ごとの検索用テキスト。本文は記事ページにあるので、ここでは文字だけ持つ
+var searchText = ${searchIndex};
 
 function filterCat(cat, el) {
   currentCat = cat;
@@ -1089,20 +1234,7 @@ function renderGrid() {
   document.getElementById('no-results').style.display = found === 0 ? '' : 'none';
 }
 
-function openDetail(id) {
-  document.getElementById('list-view').style.display = 'none';
-  document.getElementById('detail-view').classList.add('open');
-  document.querySelectorAll('.detail-inner').forEach(el => {
-    el.style.display = el.dataset.id === id ? '' : 'none';
-  });
-}
-
-function closeDetail() {
-  document.getElementById('list-view').style.display = '';
-  document.getElementById('detail-view').classList.remove('open');
-}
-
-// 道具ページから「せいろごはん」などで戻ってきたときに、その分類で開く
+// 道具ページや記事ページから「せいろごはん」で戻ってきたときに、その分類で開く
 var initialCat = new URLSearchParams(location.search).get('cat');
 if (initialCat) {
   document.querySelectorAll('.nav a').forEach(function (a) {
@@ -1125,7 +1257,7 @@ if (initialCat) {
 
   function toolCardHTML(t) {
     const photo = t.img
-      ? `<img src="${safeHtml(t.img)}" alt="${safeHtml(t.name)}" loading="lazy">`
+      ? `<img src="${safeHtml(asset(t.img))}" alt="${safeHtml(t.name)}" loading="lazy">`
       : `<div class="no-img">写真なし</div>`;
     const shops = shopButtonsHTML(t);
     return `<div class="tool-card">
@@ -1151,20 +1283,20 @@ if (initialCat) {
       <div class="section-heading"><span class="ja">${safeHtml(g.name)}</span>${g.en ? `<span class="en">${g.en}</span>` : ''}</div>
       <div class="tool-grid">${g.items.map(toolCardHTML).join('')}</div>${i < groups.length - 1 ? '\n      <hr class="section-divider">' : ''}`).join('');
 
-  const catLink = c => `<a href="index.html?cat=${encodeURIComponent(c)}">${c}</a>`;
+  const catLink = c => `<a href="/?cat=${encodeURIComponent(c)}">${c}</a>`;
 
-  const toolsHtml = `${pageHead('愛用品｜mameの穏やかなキッチン', TOOLS_CSS)}
+  const toolsHtml = `${pageHead(`愛用品｜${SITE_NAME}`, TOOLS_CSS, { path: '/tools.html', desc: '毎日使っていて、心地がいいなと思うキッチン道具をまとめています。動画でよく聞かれるものも、こちらに置いています。' })}
 <div class="site">
   <div class="site-header">
     <a class="site-title" href="/">mameの穏やかなキッチン</a>
 ${SITE_DESC}
     <div class="nav-row">
       <nav class="nav">
-        <a href="index.html">すべて</a>
+        <a href="/">すべて</a>
         ${catLink('1週間献立')}
         ${catLink('せいろごはん')}
         ${catLink('暮らし')}
-        <a class="active" href="tools.html">愛用品</a>
+        <a class="active" href="/tools.html">愛用品</a>
       </nav>
     </div>
   </div>
@@ -1177,6 +1309,7 @@ ${SITE_DESC}
   <hr class="section-divider">
 ${toolsSections}
 </div>
+${CLICK_TRACKING}
 </body>
 </html>`;
 
