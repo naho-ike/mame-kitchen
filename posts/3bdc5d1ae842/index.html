@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <style>* { -webkit-text-size-adjust: 100%; }</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>ポリ袋で作る防災ごはん｜家にあるもので試すパッククッキングの記録｜mameの穏やかなキッチン</title>
+  <meta name="description" content="家にあるものだけで試す、もしもの時のパッククッキング（ポリ袋の湯煎調理）。動画では話しきれなかった、実際に作ってみて分かったポイントをまとめています。 災害のニュースを見るたびに、少しずつ不安な気持ちが大きくなっていまし…">
+  <link rel="canonical" href="https://mamegurashi.com/posts/3bdc5d1ae842/">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="mameの穏やかなキッチン">
+  <meta property="og:title" content="ポリ袋で作る防災ごはん｜家にあるもので試すパッククッキングの記録｜mameの穏やかなキッチン">
+  <meta property="og:description" content="家にあるものだけで試す、もしもの時のパッククッキング（ポリ袋の湯煎調理）。動画では話しきれなかった、実際に作ってみて分かったポイントをまとめています。 災害のニュースを見るたびに、少しずつ不安な気持ちが大きくなっていまし…">
+  <meta property="og:url" content="https://mamegurashi.com/posts/3bdc5d1ae842/">
+  <meta property="og:image" content="https://mamegurashi.com/images/posts/3d7c5d1ae84280f58b8bdf5e01b2f7f5.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif; background: #fff; color: #1a1a1a; line-height: 1.7; }
+    .site { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .site-header { border-bottom: 0.5px solid #e0e0e0; padding-bottom: 2rem; margin-bottom: 2rem; }
+    .site-title { font-size: 22px; font-weight: 500; letter-spacing: 0.04em; text-decoration: none; color: #1a1a1a; cursor: pointer; }
+    .site-desc { font-size: 13px; margin-top: 1rem; line-height: 2.1; }
+    .site-desc .profile { margin-top: 0.75rem; font-size: 12px; color: #888; }
+    .nav-row { display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+    .nav { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .nav a { font-size: 13px; color: #888; text-decoration: none; cursor: pointer; }
+    .nav a.active { color: #1a1a1a; border-bottom: 1px solid #1a1a1a; padding-bottom: 2px; }
+    .search-wrap { position: relative; }
+    .search-wrap input { font-size: 13px; padding: 6px 12px 6px 30px; border: 0.5px solid #ccc; border-radius: 20px; background: #f7f7f7; color: #1a1a1a; width: 180px; outline: none; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: 0.35; pointer-events: none; }
+    .section-heading { margin-bottom: 1.25rem; }
+    .section-heading .ja { font-size: 18px; font-weight: 500; }
+    .section-heading .en { font-size: 12px; color: #999; letter-spacing: 0.08em; margin-left: 8px; }
+    .section-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5rem 0; }
+    .tool-size { font-size: 12px; color: #bbb; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
+    .tool-shops { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 6px; }
+    .shop-btn { flex: 1 1 68px; min-height: 38px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; color: #666; text-decoration: none; border: 0.5px solid #e0e0e0; border-radius: 6px; transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease; }
+    .shop-btn:hover, .shop-btn:focus-visible { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+    @media (prefers-reduced-motion: reduce) { .shop-btn { transition: none; } }
+    .scroll-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.25rem; margin-bottom: 0.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2rem; }
+    .card { cursor: pointer; display: block; color: inherit; text-decoration: none; }
+    .card-img { width: 100%; aspect-ratio: 16/10; background: #f3f3f3; border-radius: 8px; overflow: hidden; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .card-img .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #bbb; }
+    .card-cat { font-size: 12px; color: #999; margin-top: 10px; letter-spacing: 0.05em; }
+    .card-title { font-size: 17px; font-weight: 500; margin-top: 5px; line-height: 1.6; }
+    .card-date { font-size: 12.5px; color: #bbb; margin-top: 7px; }
+    .no-results { font-size: 16px; color: #999; padding: 2rem 0; }
+    .detail { display: none; }
+    .detail.open { display: block; }
+    .back-btn { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+    .detail-cat { font-size: 12px; color: #999; letter-spacing: 0.05em; }
+    .detail-title { font-size: 22px; font-weight: 500; margin-top: 6px; line-height: 1.5; font-variant-emoji: text; }
+    .detail-date { font-size: 12px; color: #bbb; margin-top: 8px; }
+    /* 広告の表示。サイトの説明の下に置いて、どのページでも目に入るようにする */
+    .pr-note { display: inline-block; font-size: 11px; line-height: 1.6; color: #999; background: #f7f7f7; border-radius: 6px; padding: 7px 12px; margin: 1.25rem 0 0; }
+    .yt-wrap { margin: 1.5rem 0; border-radius: 8px; overflow: hidden; aspect-ratio: 16/9; }
+    /* ショートは縦長。横幅いっぱいにすると画面からあふれるので幅を抑えて左寄せにする */
+    .yt-short { aspect-ratio: 9/16; width: min(100%, 340px); }
+    .yt-wrap iframe { width: 100%; height: 100%; border: none; }
+    .dl-section-label { font-size: 14px; color: #999; letter-spacing: 0.08em; border-bottom: 0.5px solid #e0e0e0; padding-bottom: 8px; margin-bottom: 1rem; margin-top: 1.5rem; }
+    /* auto-phrase は文節の切れ目で折り返す。「愛用キッチン道／具」のような
+       語の途中での分断を防ぐ。対応していないブラウザでは何も起きない */
+    .body-text { font-size: 16px; line-height: 2.25; word-break: auto-phrase; }
+    .body-text p { margin-bottom: 1.9em; }
+    .body-text p:last-child { margin-bottom: 0; }
+    .body-text a { color: #1a1a1a; text-decoration: underline; text-underline-offset: 3px; }
+    .body-text code { font-size: 0.9em; background: #f2f2f2; border-radius: 4px; padding: 1px 5px; }
+    .body-figure { margin: 1.9em 0; }
+    .body-figure img { width: 100%; height: auto; border-radius: 8px; display: block; }
+    .body-figure figcaption { font-size: 13px; color: #999; line-height: 1.8; margin-top: 10px; }
+    .body-list { margin: 0 0 1.9em; padding-left: 1.4em; }
+    .body-list li { margin-bottom: 0.5em; }
+    .body-list li:last-child { margin-bottom: 0; }
+    .body-quote { margin: 1.9em 0; padding-left: 1.1em; border-left: 2px solid #e0e0e0; color: #555; }
+    .body-divider { border: none; border-top: 0.5px solid #e0e0e0; margin: 2.5em 0; }
+    .tool-embed { display: flex; gap: 1.1rem; background: #f7f7f7; border-radius: 8px; padding: 1.1rem 1.25rem; margin: 1.9em 0; }
+    .tool-embed-photo { flex: 0 0 150px; }
+    .tool-embed-photo img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 6px; display: block; }
+    .tool-embed-body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+    .tool-embed-title { font-size: 16px; font-weight: 500; line-height: 1.55; }
+    .tool-embed-body .tool-shops { margin-top: 0; padding-top: 0; }
+    .body-heading { font-size: 19px; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1a1a1a; }
+    .toc-box { background: #f7f7f7; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; }
+    .toc-title { font-size: 12px; color: #999; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .toc-list a { font-size: 13px; color: #1a1a1a; text-decoration: none; }
+    .toc-list a:hover { text-decoration: underline; }
+    .memo { background: #f7f7f7; border-radius: 8px; padding: 1.15rem 1.4rem; font-size: 16px; line-height: 1.95; word-break: auto-phrase; }
+    .memo p + p { margin-top: 0.9em; }
+    .tools-note { background: #f7f7f7; border-radius: 8px; padding: 14px 16px; font-size: 15px; }
+    .tools-note a { color: #666; text-decoration: underline; }
+    .menu-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0.5rem; }
+    .menu-item { display: flex; flex-direction: column; padding: 12px 14px; background: #f7f7f7; border-radius: 8px; gap: 4px; }
+    .menu-name { font-size: 16px; font-weight: 500; color: #1a1a1a; }
+    .menu-desc { font-size: 14.5px; color: #888; line-height: 1.75; }
+    .menu-link { font-size: 13.5px; color: #888; text-decoration: underline; }
+    @media (max-width: 768px) {
+      .site { padding: 1.25rem 1rem; }
+      .site-title { font-size: 18px; }
+      .site-desc { font-size: 12px; margin-top: 0.75rem; line-height: 1.9; }
+      .site-desc .profile { font-size: 11px; }
+      .nav-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; margin-top: 1rem; }
+      .nav { gap: 1rem; }
+      .search-wrap input { width: 100%; }
+      .scroll-row { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; gap: 1.25rem; }
+      .section-divider { margin: 1.75rem 0; }
+      .detail-title { font-size: 18px; }
+      .body-text { font-size: 15px; }
+      .memo { font-size: 15px; }
+      /* パソコンの幅に合わせて入れた文中の改行は、狭い画面では
+         中途半端な位置に残ってしまうので畳む。空行の区切りは残る */
+      .body-text br.soft, .memo br.soft { display: none; }
+      .tool-embed { flex-direction: column; gap: 0.9rem; }
+      .tool-embed-photo { flex: none; }
+      .tool-embed-photo img { aspect-ratio: 4/3; }
+      .card-title { font-size: 15.5px; }
+    }
+  </style>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8MM6439TZJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8MM6439TZJ');
+</script>
+</head>
+<body>
+<div class="site">
+  <div class="site-header">
+    <a class="site-title" href="/">mameの穏やかなキッチン</a>
+    <div class="site-desc">
+      毎日の暮らしの中で、 ごはんを作って、食べる記録です。<br>
+      YouTubeで紹介しているレシピや工夫を、 少しだけ丁寧にまとめています。<br>
+      がんばりすぎず、ちゃんと食べることを大切に。
+      <div class="profile">管理栄養士。 夫と0歳の息子と暮らしています。</div>
+    </div>
+    <p class="pr-note">このサイトはアフィリエイト広告（Amazonアソシエイト含む）を掲載しています。</p>
+    <div class="nav-row">
+      <nav class="nav">
+        <a href="/">すべて</a>
+        <a href="/?cat=1%E9%80%B1%E9%96%93%E7%8C%AE%E7%AB%8B">1週間献立</a>
+        <a href="/?cat=%E3%81%9B%E3%81%84%E3%82%8D%E3%81%94%E3%81%AF%E3%82%93">せいろごはん</a>
+        <a class="active" href="/?cat=%E6%9A%AE%E3%82%89%E3%81%97">暮らし</a>
+        <a href="/tools.html">愛用品</a>
+      </nav>
+    </div>
+  </div>
+  <a class="back-btn" href="/">← 一覧に戻る</a>
+<article class="detail-inner" data-id="3bdc5d1ae84281fbaf28f034656d8cb1">
+      <div class="detail-cat">暮らし</div>
+      <h1 class="detail-title">ポリ袋で作る防災ごはん｜家にあるもので試すパッククッキングの記録</h1>
+      <div class="detail-date">2026.08.16</div>
+      <div class="yt-wrap"><iframe src="https://www.youtube.com/embed/fp3l6Ejiw5g" allowfullscreen></iframe></div>
+      <div class="dl-section-label">このごはんについて</div><div class="toc-box"><div class="toc-title">目次</div><ul class="toc-list"><li><a href="#3bdc5d1ae84281fbaf28f034656d8cb1-heading-1">パッククッキングの下準備とコツ</a></li><li><a href="#3bdc5d1ae84281fbaf28f034656d8cb1-heading-2">白米</a></li><li><a href="#3bdc5d1ae84281fbaf28f034656d8cb1-heading-3">ツナトマトパスタ</a></li><li><a href="#3bdc5d1ae84281fbaf28f034656d8cb1-heading-4">豆乳蒸しパン</a></li><li><a href="#3bdc5d1ae84281fbaf28f034656d8cb1-heading-5">最後に</a></li></ul></div><div class="body-text"><p>家にあるものだけで試す、もしもの時の<strong>パッククッキング</strong>（ポリ袋の湯煎調理）。<br class="soft">動画では話しきれなかった、実際に作ってみて分かったポイントをまとめています。</p><p>災害のニュースを見るたびに、少しずつ不安な気持ちが大きくなっていました。<br class="soft"></p><p>「<strong>自分はもしもの備えができているかな</strong>」と立ち止まったとき、<br class="soft">不安になった今こそ、小さな行動を起こすチャンスだと思い、実際に試してみることにしました。</p><p>今回は<strong>アイラップ（ポリ袋）</strong>を使った<strong>パッククッキング</strong>に挑戦。<br class="soft"></p><p>家にあるガスコンロとアイラップだけで、ごはんやおかずが作れるかを試してみました。</p><p>湯煎は、<strong>少ない水で済んで</strong>、<strong>鍋も汚れにくい</strong>のがいいところ。<br class="soft"></p><p>お湯は直接食べ物に触れないので、<strong>繰り返し使える</strong>のも助かります。</p><h3 class="body-heading" id="3bdc5d1ae84281fbaf28f034656d8cb1-heading-1">パッククッキングの下準備とコツ</h3><p>米とパスタは、湯煎の前にしばらく<strong>浸水</strong>させます。<br class="soft"></p><figure class="body-figure"><img src="/images/posts/3d7c5d1ae84280f58b8bdf5e01b2f7f5.jpg" alt="" loading="lazy"></figure><p>袋は<strong>なるべく空気を抜いておく</strong>と、鍋の中で浮きにくくなります。<br class="soft"></p><p>鍋底には、袋が溶けないように<strong>お皿</strong>や<strong>ふきん</strong>を敷いておきます。</p><p>米とパスタは沈みましたが、蒸しパンは浮いてきてしまったので、途中で<strong>上下をひっくり返す</strong>ことにしました。<br class="soft">お皿を敷いてみたら、沸騰したお湯でカタカタと、思いのほか大きな音が鳴り続けました。<br class="soft">音が気になる場合は、<strong>ふきん</strong>のほうがストレスが少ないかもしれません。<br class="soft"></p><figure class="body-figure"><img src="/images/posts/3d7c5d1ae8428019816bf6c8fa990b35.jpg" alt="" loading="lazy"></figure><p>非常時は気が立っているものなので、こうして平常時に試しておけてよかったなと思いました。</p><h3 class="body-heading" id="3bdc5d1ae84281fbaf28f034656d8cb1-heading-2">白米</h3><p>1合(180ml)に対して、水220ml。<br class="soft">20分浸水させてから、湯煎で30分。<br class="soft">その後10分蒸らして完成です。<br class="soft"></p><p>少し水分が多めでしたが、味はおいしい。<br class="soft"></p><figure class="body-figure"><img src="/images/posts/3d7c5d1ae84280db897fe74d88a5dbd9.jpg" alt="" loading="lazy"></figure><p>キャンプで炊いたお米って、こんな感じだったなと思い出しました。<br><br>袋ごと湯煎するので、炊けたあとに分けなくても、<strong>袋のまま1人分になる</strong>のがいいところ。<br class="soft">これなら、取り分けで喧嘩になることもなさそうです。<br class="soft"></p><p><strong>200mlのコップ</strong>を一緒に準備しておくと、1杯弱でお米、1杯強でお水と、<br class="soft">だいたいの分量が計れるそうです。<br class="soft">ポリ袋と一緒に、備えておいてもいいかもしれません。</p><h3 class="body-heading" id="3bdc5d1ae84281fbaf28f034656d8cb1-heading-3">ツナトマトパスタ</h3><p>パスタは、湯煎する前にトマトジュースに20分ほど漬け込みます。<br class="soft">表記通りの時間で湯煎したら、さらに10分ほど放置。<br class="soft"></p><p>仕上げにツナ缶とバジルを加えます。</p><figure class="body-figure"><img src="/images/posts/3d7c5d1ae84280d89eb3d7fc01df0d34.jpg" alt="" loading="lazy"></figure><p>食感はもちもち、味はトマトジュース感が強めでした。<br class="soft"></p><p>ただ、麺を茹でていないからか、食後に<strong>お腹が張って苦しくなりました</strong>…。<br class="soft"></p><p>普段からワンパンパスタが平気な方は、大丈夫かもしれません。</p><p>1人で全部食べようとすると苦しくなってしまったので、<br class="soft">お米やパンに飽きてきたときに、パスタを作ってみんなで分ける、という使い方も良さそうです。</p><h3 class="body-heading" id="3bdc5d1ae84281fbaf28f034656d8cb1-heading-4">豆乳蒸しパン</h3><p>ホットケーキミックスと豆乳を1:1で混ぜます。<br class="soft"></p><p>湯煎で15分たったらひっくり返して、さらに15分。<br class="soft">食感は、ふかふかの肉まんの皮みたいな感じ。<br class="soft"></p><figure class="body-figure"><img src="/images/posts/3d7c5d1ae84280bdb66cc9c11d151672.jpg" alt="" loading="lazy"></figure><p>ふわふわで、ちゃんと蒸しパンになっていて、ほんのり甘くておいしかったです。<br class="soft"></p><p>今回の3品の中で、<strong>一番おいしかった一品</strong>でした。<br class="soft">干しぶどうやナッツを入れたりと、アレンジもいろいろできそうです。<br class="soft"></p><p>お子さんがいる家庭では、<strong>甘いものがあると少し気持ちが落ち着く</strong>こともあると思うので、<br class="soft">ホットケーキミックスは常備しておきたいなと思いました。</p><h3 class="body-heading" id="3bdc5d1ae84281fbaf28f034656d8cb1-heading-5">最後に</h3><figure class="body-figure"><img src="/images/posts/3d7c5d1ae8428069afc7d5d40e1d13b3.jpg" alt="" loading="lazy"></figure><p><strong>少しでも試しておく</strong>ことが、心の余裕につながると思います。<br class="soft"></p><p>災害時の食事は、普段と勝手が違いますし、余裕もないので、工夫もしづらいと思います。<br class="soft">だからこそ、普段の生活の中で「<strong>これなら食べられそう</strong>」を見つけておくこと。</p><p>いつ、何が起こるか分からない今だからこそ。<br class="soft">不安に思うだけでなく、<strong>備えて</strong>、<strong>手を動かす</strong>大切さを感じました。</p><p>実際に試してみて、普段から備えておくことの大切さを実感しました。<br class="soft"></p><p>「<strong>いざとなったら</strong>」と思っているだけでは、不安は残ったままです。</p></div>
+      <div class="dl-section-label">今週の献立</div><div class="menu-list"><div class="menu-item">
+        <span class="menu-name">トマトパスタ</span>
+        <span class="menu-desc">パスタをトマトジュースに20分漬けてから湯煎。表記通り湯煎後に10分放置。ツナ缶とバジルで味付け。味は悪くなかったが食後にお腹が張りやすかった</span>
+        
+      </div><div class="menu-item">
+        <span class="menu-name">米</span>
+        <span class="menu-desc">1合（180ml）に水を210～220ml。20分浸水してから湯煎30分。その後10分蒸らす</span>
+        
+      </div><div class="menu-item">
+        <span class="menu-name">蒸しパン</span>
+        <span class="menu-desc">ホットケーキミックスと豆乳1：1の割合で混ぜる。湯煎15分後、ひっくり返してさらに15分。今回一番美味しかった一品</span>
+        
+      </div></div>
+      
+      <div class="dl-section-label">使ったもの</div>
+      <div class="tools-note"><a href="/tools.html">愛用しているものは、愛用品のページにまとめています →</a></div>
+    </article>
+</div>
+<script>
+document.addEventListener('click', function (e) {
+  var a = e.target.closest && e.target.closest('a[rel~="sponsored"]');
+  if (!a || typeof gtag !== 'function') return;
+
+  var place = a.closest('.tool-embed') ? 'article_card'
+    : a.closest('.tool-card') ? 'tools_page'
+    : a.closest('.menu-list') ? 'menu'
+    : a.closest('.body-text') ? 'article_text'
+    : 'other';
+  var host = '';
+  try { host = new URL(a.href).hostname; } catch (err) {}
+
+  gtag('event', 'affiliate_click', {
+    shop: a.dataset.shop || host,
+    tool: a.dataset.tool || (a.textContent || '').trim().slice(0, 60),
+    place: place,
+    page_path: location.pathname,
+    transport_type: 'beacon'
+  });
+}, true);
+</script>
+</body>
+</html>
