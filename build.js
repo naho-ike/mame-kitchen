@@ -1128,7 +1128,7 @@ async function main() {
     })() : '';
 
     const menuSection = menuHtml
-      ? `<div class="dl-section-label">今週の献立</div><div class="menu-list">${menuHtml}</div>`
+      ? `<div class="dl-section-label">献立メモ</div><div class="menu-list">${menuHtml}</div>`
       : '';
 
     const memoSection = p.memo
