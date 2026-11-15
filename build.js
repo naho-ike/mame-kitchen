@@ -321,7 +321,32 @@ function isAffiliate(url) {
   }
 }
 
+// Notionのページどうしのリンク（記事→記事、記事→道具管理）は、そのままだと読者が
+// Notionに飛ばされてしまう。サイトの中の対応するページに置き換える。
+// どちらにも当たらないNotionページ（非公開の下書きなど）はリンクにしない
+const notionLinkTargets = new Map();
+
+function notionPageId(href) {
+  const u = String(href || '').trim();
+  const isNotion = /^\/[^/]/.test(u)
+    || /^https?:\/\/([a-z0-9-]+\.)?(notion\.so|notion\.site|notion\.com)\//i.test(u);
+  if (!isNotion) return null;
+  const hex = u.split(/[?#]/)[0].replace(/-/g, '').match(/[0-9a-f]{32}/gi);
+  return hex ? hex[hex.length - 1].toLowerCase() : null;
+}
+
+function resolveLink(href) {
+  const id = notionPageId(href);
+  if (!id) return href;
+  const target = notionLinkTargets.get(id);
+  if (target) return target;
+  console.error(`公開していないNotionページへのリンクだったので、文字だけにしました: ${String(href).slice(0, 80)}`);
+  return '';
+}
+
 function linkAttrs(url) {
+  // サイトの中のページは、同じタブで開く
+  if (/^\/(?!\/)/.test(url)) return '';
   return isAffiliate(url)
     ? 'target="_blank" rel="nofollow sponsored noopener" referrerpolicy="no-referrer-when-downgrade"'
     : 'target="_blank" rel="noopener"';
@@ -363,7 +388,7 @@ function richTextToHtml(richText) {
     if (a.italic) t = `<em>${t}</em>`;
     if (a.bold) t = `<strong>${t}</strong>`;
     if (r.href) {
-      const href = safeUrl(r.href, '本文のリンク');
+      const href = safeUrl(resolveLink(r.href), '本文のリンク');
       if (href) t = `<a href="${safeHtml(href)}" ${linkAttrs(href)}>${t}</a>`;
     }
     return t;
@@ -1026,6 +1051,11 @@ async function main() {
 
   // 本文の [[道具名]] を引けるようにしてから、ページ本文を組み立てる
   for (const t of tools) for (const k of toolKeys(t.name)) toolByName.set(k, t);
+
+  // 本文の中のNotionリンクを、記事ページ・愛用品ページの場所に置き換えられるようにする
+  reserveSlugs(posts);
+  for (const p of posts) notionLinkTargets.set(p.id.toLowerCase(), postPath(p));
+  for (const t of tools) notionLinkTargets.set(t.id.toLowerCase(), `/tools.html#tool-${t.id}`);
   for (const post of posts) {
     if (post.blocks) {
       post.body = blocksToHtml(post.blocks, `${post.id}-`);
@@ -1276,7 +1306,7 @@ if (initialCat) {
       ? `<img src="${safeHtml(asset(t.img))}" alt="${safeHtml(t.name)}" loading="lazy">`
       : `<div class="no-img">写真なし</div>`;
     const shops = shopButtonsHTML(t);
-    return `<div class="tool-card">
+    return `<div class="tool-card" id="tool-${t.id}">
         <div class="tool-photo">${photo}</div>
         ${t.size ? `<div class="tool-size">${safeHtml(t.size)}</div>` : ''}
         <div class="tool-title">${safeHtml(t.name)}</div>
