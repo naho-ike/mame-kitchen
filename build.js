@@ -706,6 +706,9 @@ const INDEX_CSS = `
     .no-results { font-size: 16px; color: #999; padding: 2rem 0; }
     .detail { display: none; }
     .detail.open { display: block; }
+    .not-found { padding: 2rem 0 4rem; line-height: 2; }
+    .not-found p { margin-top: 1rem; }
+    .not-found a { color: #1a1a1a; }
     .back-btn { font-size: 13px; color: #888; cursor: pointer; margin-bottom: 2rem; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
     .detail-cat { font-size: 12px; color: #999; letter-spacing: 0.05em; }
     .detail-title { font-size: 22px; font-weight: 500; margin-top: 6px; line-height: 1.5; font-variant-emoji: text; }
@@ -863,7 +866,7 @@ function pageHead(title, css, meta = {}) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="format-detection" content="telephone=no, date=no, email=no, address=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>${title}</title>
+  <title>${title}</title>${meta.noindex ? '\n  <meta name="robots" content="noindex">' : ''}
   <meta name="description" content="${safeHtml(desc)}">
   <link rel="canonical" href="${safeHtml(url)}">
   <meta property="og:type" content="${meta.type || 'website'}">
@@ -1055,7 +1058,7 @@ async function main() {
   // 本文の中のNotionリンクを、記事ページ・愛用品ページの場所に置き換えられるようにする
   reserveSlugs(posts);
   for (const p of posts) notionLinkTargets.set(p.id.toLowerCase(), postPath(p));
-  for (const t of tools) notionLinkTargets.set(t.id.toLowerCase(), `/tools.html#tool-${t.id}`);
+  for (const t of tools) notionLinkTargets.set(t.id.toLowerCase(), `/tools#tool-${t.id}`);
   for (const post of posts) {
     if (post.blocks) {
       post.body = blocksToHtml(post.blocks, `${post.id}-`);
@@ -1110,7 +1113,7 @@ async function main() {
     // 使った道具は記事ごとに書かず、道具ページへ誘導する
     const toolsLink = tools.length
       ? `<div class="dl-section-label">使ったもの</div>
-      <div class="tools-note"><a href="/tools.html">愛用しているものは、愛用品のページにまとめています →</a></div>`
+      <div class="tools-note"><a href="/tools">愛用しているものは、愛用品のページにまとめています →</a></div>`
       : '';
 
     const bodySection = (p.body?.html || p.point) ? (() => {
@@ -1163,7 +1166,7 @@ async function main() {
     return [
       item('すべて', '/'),
       ...CATS.map(c => item(c, `/?cat=${encodeURIComponent(c)}`)),
-      ...(tools.length ? [item('愛用品', '/tools.html')] : []),
+      ...(tools.length ? [item('愛用品', '/tools')] : []),
     ].join('\n        ');
   };
 
@@ -1219,7 +1222,7 @@ ${SITE_DESC}
         <a class="active" onclick="filterCat('all',this)">すべて</a>
         <a onclick="filterCat('1週間献立',this)">1週間献立</a>
         <a onclick="filterCat('せいろごはん',this)">せいろごはん</a>
-        <a onclick="filterCat('暮らし',this)">暮らし</a>${tools.length ? `\n        <a href="/tools.html">愛用品</a>` : ''}
+        <a onclick="filterCat('暮らし',this)">暮らし</a>${tools.length ? `\n        <a href="/tools">愛用品</a>` : ''}
       </nav>
       <div class="search-wrap">
         <svg class="search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#1a1a1a" stroke-width="1.5">
@@ -1294,6 +1297,23 @@ if (initialCat) {
   fs.writeFileSync('index.html', html);
   console.log(`Built index.html with ${posts.length} posts.`);
 
+  // ---- 404.html ----
+  // 存在しないURLで開かれたときのページ。これが無いと、Cloudflare Pages は
+  // どんなURLにもトップページを返してしまい、検索エンジンからは同じ内容の
+  // ページが無数にあるように見える
+  const notFound = `${pageHead(`ページが見つかりません｜${SITE_NAME}`, INDEX_CSS, { path: '/404', noindex: true })}
+<div class="site">
+${siteHeader('')}
+  <div class="not-found">
+    <h1 class="detail-title">お探しのページが見つかりませんでした</h1>
+    <p>記事のURLが変わったか、公開を終えた記事かもしれません。</p>
+    <p><a href="/">記事の一覧から探す →</a></p>
+  </div>
+</div>
+</body>
+</html>`;
+  fs.writeFileSync('404.html', notFound);
+
   // ---- tools.html ----
 
   if (!tools.length) {
@@ -1331,7 +1351,7 @@ if (initialCat) {
 
   const catLink = c => `<a href="/?cat=${encodeURIComponent(c)}">${c}</a>`;
 
-  const toolsHtml = `${pageHead(`愛用品｜${SITE_NAME}`, TOOLS_CSS, { path: '/tools.html', desc: '毎日使っていて、心地がいいなと思うキッチン道具をまとめています。動画でよく聞かれるものも、こちらに置いています。' })}
+  const toolsHtml = `${pageHead(`愛用品｜${SITE_NAME}`, TOOLS_CSS, { path: '/tools', desc: '毎日使っていて、心地がいいなと思うキッチン道具をまとめています。動画でよく聞かれるものも、こちらに置いています。' })}
 <div class="site">
   <div class="site-header">
     <a class="site-title" href="/">mameの穏やかなキッチン</a>
@@ -1342,7 +1362,7 @@ ${SITE_DESC}
         ${catLink('1週間献立')}
         ${catLink('せいろごはん')}
         ${catLink('暮らし')}
-        <a class="active" href="/tools.html">愛用品</a>
+        <a class="active" href="/tools">愛用品</a>
       </nav>
     </div>
   </div>

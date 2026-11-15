@@ -40,6 +40,7 @@ jobs:
           stage() {
             git add index.html
             if [ -f tools.html ]; then git add tools.html; fi
+            if [ -f 404.html ]; then git add 404.html; fi
             if [ -d images ]; then git add images; fi
             # 記事ごとのページ。公開をやめた記事のページが消えたことも記録する
             if [ -d posts ]; then git add -A posts; fi
