@@ -47,6 +47,11 @@ function postSlug(p) {
   }
   // NotionのページIDは、先頭が作った時期で決まるため近い時期の記事どうしで似通う。
   // ランダムに決まる末尾を使う。万一ほかの記事と重なったら、IDをまるごと使う
+  return defaultSlug(p);
+}
+
+// 「URL名」を使わないときのURL。URL名を付けたあとも、ここから転送して開けるようにする
+function defaultSlug(p) {
   const short = p.id.slice(-12);
   return slugOwners.get(short) && slugOwners.get(short) !== p.id ? p.id : short;
 }
@@ -1064,7 +1069,7 @@ async function main() {
   for (const t of tools) notionLinkTargets.set(t.id.toLowerCase(), `/tools#tool-${t.id}`);
   for (const post of posts) {
     if (post.blocks) {
-      post.body = blocksToHtml(post.blocks, `${post.id}-`);
+      post.body = blocksToHtml(post.blocks, '');
       // リンクプレビュー用に、本文に入っている画像の場所を控えておく
       post.body.images = post.blocks.filter(b => b.type === 'image' && b.localSrc).map(b => b.localSrc);
     }
@@ -1121,7 +1126,7 @@ async function main() {
 
     const bodySection = (p.body?.html || p.point) ? (() => {
       // ページ本文が書かれていればそちらを優先する
-      const { html, toc } = p.body?.html ? p.body : textToHtml(p.point, `${p.id}-`);
+      const { html, toc } = p.body?.html ? p.body : textToHtml(p.point, '');
       const tocHtml = toc ? `<div class="toc-box"><div class="toc-title">目次</div><ul class="toc-list">${toc}</ul></div>` : '';
       return `<div class="dl-section-label">${safeHtml(p.lead || LEAD_LABEL)}</div>${tocHtml}<div class="body-text">${html}</div>`;
     })() : '';
@@ -1131,7 +1136,7 @@ async function main() {
       : '';
 
     const memoSection = p.memo
-      ? `<div class="dl-section-label">最後に</div><div class="memo">${textToHtml(p.memo, `${p.id}-memo-`).html}</div>`
+      ? `<div class="dl-section-label">最後に</div><div class="memo">${textToHtml(p.memo, 'memo-').html}</div>`
       : '';
 
     // 広告の表示はサイトの説明に置いて全ページで出しているので、記事ごとには出さない
@@ -1204,6 +1209,16 @@ ${CLICK_TRACKING}
     fs.writeFileSync(path.join(dir, 'index.html'), html);
   }
   cleanPostPages(new Set(posts.map(postSlug)));
+
+  // 「URL名」を付けた記事は、前のURL（英数字だけのもの）から新しいURLへ転送する。
+  // すでにSNSなどに貼ったリンクが切れないようにするため（Cloudflare Pages の仕組み）
+  const redirects = posts
+    .filter(p => postSlug(p) !== defaultSlug(p))
+    .flatMap(p => [
+      `/posts/${defaultSlug(p)}/ ${postPath(p)} 301`,
+      `/posts/${defaultSlug(p)} ${postPath(p)} 301`,
+    ]);
+  fs.writeFileSync('_redirects', redirects.length ? redirects.join('\n') + '\n' : '');
   console.log(`Built ${articles.length} post pages under posts/.`);
 
   // ---- index.html ----
